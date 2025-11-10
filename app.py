@@ -45,18 +45,29 @@ st.markdown("""
         padding: 1rem;
         border-radius: 8px;
         margin: 1rem 0;
+        color: #000000;
+    }
+    .result-box h3 {
+        color: #000000;
+        margin-top: 0;
+    }
+    .result-box p {
+        color: #000000;
     }
     .high-confidence {
         background-color: #d4edda;
         border-left: 4px solid #28a745;
+        color: #000000;
     }
     .medium-confidence {
         background-color: #fff3cd;
         border-left: 4px solid #ffc107;
+        color: #000000;
     }
     .low-confidence {
         background-color: #f8d7da;
         border-left: 4px solid #dc3545;
+        color: #000000;
     }
 </style>
 """, unsafe_allow_html=True)
