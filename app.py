@@ -29,6 +29,17 @@ st.markdown("""
         background-color: #f8f9fa;
         border-left: 5px solid #1f77b4;
         margin: 1rem 0;
+        color: #000000;
+    }
+    .disease-card h3 {
+        color: #1f77b4;
+        margin-top: 0;
+    }
+    .disease-card ul {
+        margin-bottom: 0;
+    }
+    .disease-card li {
+        margin: 0.5rem 0;
     }
     .result-box {
         padding: 1rem;
