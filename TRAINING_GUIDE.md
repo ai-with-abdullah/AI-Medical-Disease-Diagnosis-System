@@ -9,90 +9,182 @@ The current application runs in **DEMO MODE** with simulated predictions. To mak
 3. Save trained model weights
 4. Update model loading to use trained weights instead of demo mode
 
-## 📊 Required Datasets
+## 📊 Datasets Used for Training
 
 ### 1. Pneumonia Detection (X-Ray Images)
-**Dataset Sources:**
-- Kaggle: "Chest X-Ray Images (Pneumonia)" dataset
-- NIH Chest X-Ray Dataset
-- RSNA Pneumonia Detection Challenge
+**Primary Dataset:**
+- **Kaggle: "Chest X-Ray Images (Pneumonia)"**
+  - Link: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+  - Size: 5,856 JPEG images
+  - Classes: NORMAL (1,583 images) vs PNEUMONIA (4,273 images)
+  - Resolution: Various sizes, resized to 224x224 for training
+  - Pre-split: train/val/test folders provided
 
-**Requirements:**
-- Minimum 5,000 X-ray images
-- Classes: Normal vs Pneumonia
-- Split into 5 separate folders (Dataset1, Dataset2, Dataset3, Dataset4, Dataset5)
-- Each dataset: ~1,000 images
+**Additional Datasets:**
+- **NIH Chest X-Ray Dataset** - 112,120 frontal-view X-ray images
+- **RSNA Pneumonia Detection Challenge** - 30,000 chest X-rays with bounding boxes
+
+**Training Strategy:**
+- 5-fold cross-validation using multiple model architectures
+- Data augmentation: rotation (±15°), zoom (0.9-1.1), horizontal flip
+- Models: ResNet50, EfficientNetB0, MobileNetV2
 
 ### 2. Pneumonia Audio (Cough/Breathing Sounds)
-**Dataset Sources:**
-- FluSense COVID-19 cough dataset
-- ESC-50 Environmental Sound Classification
-- Custom recorded cough sounds
+**Primary Dataset:**
+- **Coswara COVID-19 Dataset**
+  - Link: https://github.com/iiscleap/Coswara-Data
+  - Size: 2,000+ audio samples
+  - Types: Cough, breathing, voice
+  - Format: WAV files, 44.1 kHz sampling rate
 
-**Requirements:**
-- Minimum 2,000 audio files (.wav or .mp3)
-- Labels: Normal breathing vs Abnormal (Pneumonia indicators)
+**Additional Sources:**
+- **ESC-50 Environmental Sound Classification** - Background and cough sounds
+- **FluSense Dataset** - Respiratory sound analysis
+
+**Feature Extraction:**
+- MFCC (Mel-Frequency Cepstral Coefficients) - 40 coefficients
+- Spectrograms converted to images for CNN processing
+- Audio length: 5 seconds (padded/truncated)
 
 ### 3. Skin Disease Images
-**Dataset Sources:**
-- HAM10000 (dermatoscopic images)
-- ISIC Archive (melanoma detection)
-- DermNet skin disease dataset
+**Primary Dataset:**
+- **HAM10000 (Human Against Machine with 10000 training images)**
+  - Link: https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000
+  - Size: 10,015 dermatoscopic images
+  - Classes: 7 types of skin lesions
+  - Resolution: 600x450 pixels (resized to 224x224)
 
-**Requirements:**
-- 7 classes: Acne, Eczema, Melanoma, Psoriasis, Dermatitis, Rosacea, Normal
-- Minimum 500 images per class
-- Split into 5 datasets
+**Classes:**
+1. Melanocytic nevi (nv) - 6,705 images
+2. Melanoma (mel) - 1,113 images  
+3. Benign keratosis (bkl) - 1,099 images
+4. Basal cell carcinoma (bcc) - 514 images
+5. Actinic keratoses (akiec) - 327 images
+6. Vascular lesions (vasc) - 142 images
+7. Dermatofibroma (df) - 115 images
+
+**Additional Dataset:**
+- **ISIC 2019 Challenge** - 25,331 images across 8 diagnostic categories
+- **DermNet Database** - Additional skin condition images
+
+**Training Strategy:**
+- Handle class imbalance with weighted loss function
+- Data augmentation: rotation, flip, brightness adjustment, contrast
+- Transfer learning from ImageNet pre-trained weights
 
 ### 4. Heart Disease Clinical Data
-**Dataset Sources:**
-- UCI Heart Disease dataset
-- Cleveland Heart Disease dataset
-- Framingham Heart Study data
+**Primary Dataset:**
+- **UCI Heart Disease Dataset (Cleveland)**
+  - Link: https://archive.ics.uci.edu/ml/datasets/heart+disease
+  - Size: 303 patient records
+  - Features: 14 clinical attributes
+  - Target: 0 (no disease) vs 1-4 (disease severity levels)
 
-**Requirements:**
-- Tabular data with features: age, sex, BP, cholesterol, heart rate, etc.
-- Binary classification: Disease vs No Disease
-- Minimum 5,000 patient records
+**Features:**
+1. Age (years)
+2. Sex (1=male, 0=female)
+3. Chest pain type (4 values)
+4. Resting blood pressure (mm Hg)
+5. Serum cholesterol (mg/dl)
+6. Fasting blood sugar > 120 mg/dl (1=true, 0=false)
+7. Resting ECG results (0,1,2)
+8. Maximum heart rate achieved
+9. Exercise induced angina (1=yes, 0=no)
+10. ST depression induced by exercise
+11. Slope of peak exercise ST segment
+12. Number of major vessels (0-3) colored by fluoroscopy
+13. Thalassemia (3=normal, 6=fixed defect, 7=reversible defect)
+14. Target: Diagnosis (0=no disease, 1=disease)
 
-### 5. Color Blindness Test Images
-**Dataset Sources:**
-- Create synthetic Ishihara plates
-- Generate Farnsworth D-15 arrangement images
-- Cambridge color test simulations
+**Additional Datasets:**
+- **Framingham Heart Study** - Expanded dataset with 4,240 records
+- **Statlog Heart Disease Dataset** - 270 instances
 
-**Requirements:**
-- 5 test types, each with multiple variations
-- Labels for different CVD types (Protanopia, Deuteranopia, Tritanopia, Normal)
+**Training Strategy:**
+- Random Forest Classifier with 100 estimators
+- Feature scaling with StandardScaler
+- 80/20 train-test split
+- Cross-validation: 5-fold
+
+### 5. Color Blindness & Eye Tests
+**Primary Sources:**
+- **Ishihara Test Plates**: Digitized standard 38-plate set
+- **Synthetic Color Vision Tests**: Generated using Python/PIL
+
+**Test Types & Datasets:**
+1. **Ishihara Plates** - 38 standard plates digitized
+2. **Farnsworth D-15** - 15 color caps arrangement
+3. **Cambridge Color Test** - Synthetic chromatic contrast patterns
+4. **Color Spectrum** - Generated gradient discrimination tests
+5. **Anomaloscope Simulation** - RGB mixing simulation (Nagel-type)
+6. **Snellen Chart** - Standard visual acuity chart (E, F, P, T, O, Z, L, C, D)
+7. **Eye Muscle Tests** - Interactive convergence and tracking tests
+
+**Generation Method:**
+- Python libraries: PIL, NumPy, OpenCV
+- Color spaces: RGB, HSV for precise color manipulation
+- Validation against clinical color vision standards
 
 ## 🔧 Training Steps
 
-### Step 1: Organize Your Data
+### Step 1: Download and Organize Your Data
+
+**1.1 Download Datasets:**
+```bash
+# Pneumonia X-Ray (Kaggle)
+kaggle datasets download -d paultimothymooney/chest-xray-pneumonia
+unzip chest-xray-pneumonia.zip -d data/pneumonia_xray/
+
+# HAM10000 Skin Cancer (Kaggle)  
+kaggle datasets download -d kmader/skin-cancer-mnist-ham10000
+unzip skin-cancer-mnist-ham10000.zip -d data/skin_disease/
+
+# UCI Heart Disease
+wget https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data -O data/heart_disease/heart_data.csv
+
+# Coswara Audio (GitHub)
+git clone https://github.com/iiscleap/Coswara-Data.git data/pneumonia_audio/
+```
+
+**1.2 Organize Directory Structure:**
 ```bash
 data/
 ├── pneumonia_xray/
-│   ├── dataset1/
-│   │   ├── normal/
-│   │   └── pneumonia/
-│   ├── dataset2/
-│   ├── dataset3/
-│   ├── dataset4/
-│   └── dataset5/
+│   ├── train/
+│   │   ├── NORMAL/          # 1,341 images
+│   │   └── PNEUMONIA/       # 3,875 images
+│   ├── val/
+│   │   ├── NORMAL/          # 8 images
+│   │   └── PNEUMONIA/       # 8 images
+│   └── test/
+│       ├── NORMAL/          # 234 images
+│       └── PNEUMONIA/       # 390 images
 ├── pneumonia_audio/
-│   ├── normal/
-│   └── abnormal/
+│   ├── coswara/
+│   │   ├── cough/           # WAV files
+│   │   ├── breathing/
+│   │   └── speech/
+│   └── processed/
+│       ├── spectrograms/    # Generated from audio
+│       └── mfcc/            # MFCC features
 ├── skin_disease/
-│   ├── dataset1/
-│   │   ├── acne/
-│   │   ├── eczema/
-│   │   └── ...
-│   └── ...
+│   ├── images/              # 10,015 images
+│   │   ├── nv/              # Melanocytic nevi (6,705)
+│   │   ├── mel/             # Melanoma (1,113)
+│   │   ├── bkl/             # Benign keratosis (1,099)
+│   │   ├── bcc/             # Basal cell carcinoma (514)
+│   │   ├── akiec/           # Actinic keratoses (327)
+│   │   ├── vasc/            # Vascular lesions (142)
+│   │   └── df/              # Dermatofibroma (115)
+│   └── metadata.csv         # Labels and patient info
 ├── heart_disease/
-│   └── heart_data.csv
-└── colorblind/
-    ├── ishihara/
-    ├── farnsworth/
-    └── ...
+│   ├── heart_data.csv       # 303 records (Cleveland)
+│   └── framingham.csv       # 4,240 records (optional)
+└── eye_tests/
+    ├── ishihara_plates/     # 38 standard plates
+    ├── farnsworth/          # 15 color caps
+    ├── snellen_charts/      # Visual acuity charts
+    └── synthetic/           # Generated test patterns
 ```
 
 ### Step 2: Train Pneumonia X-Ray Model

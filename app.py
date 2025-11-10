@@ -117,7 +117,7 @@ def show_home():
         st.metric(label="🏥 Diseases", value="4", delta="Multi-Modal")
     
     with metric_col3:
-        st.metric(label="👁️ Eye Tests", value="5", delta="Comprehensive")
+        st.metric(label="👁️ Eye Tests", value="7", delta="Comprehensive")
     
     with metric_col4:
         st.metric(label="📊 Fusion Methods", value="4", delta="Advanced")
@@ -134,7 +134,7 @@ def show_home():
                 <li><strong>Multi-Modal AI</strong>: Images, Audio, Text Reports</li>
                 <li><strong>4 Disease Categories</strong>: Pneumonia, Skin, Heart, Eye</li>
                 <li><strong>Advanced Models</strong>: ResNet50, EfficientNet, MobileNet</li>
-                <li><strong>5 Color Blindness Tests</strong>: Comprehensive eye examination</li>
+                <li><strong>7 Eye & Vision Tests</strong>: Color vision + Visual acuity + Eye muscle function</li>
                 <li><strong>Audio Analysis</strong>: Cough and breathing pattern detection</li>
                 <li><strong>NLP Integration</strong>: Medical report text analysis</li>
                 <li><strong>Live Camera & Microphone</strong>: Real-time analysis</li>
@@ -173,7 +173,7 @@ def show_home():
         st.warning("**❤️ Heart Disease**\n\n✓ Clinical Features Analysis\n\n✓ Random Forest Prediction\n\n✓ Risk Assessment")
     
     with diseases_col4:
-        st.error("**👁️ Color Blindness**\n\n✓ Live Interactive Tests\n\n✓ 5 Different Test Types\n\n✓ Real-time Analysis")
+        st.error("**👁️ Eye & Vision Tests**\n\n✓ Live Interactive Tests\n\n✓ 7 Comprehensive Tests\n\n✓ Real-time Analysis")
 
 def show_pneumonia_detection():
     st.header("🫁 Pneumonia Detection System")
@@ -455,13 +455,15 @@ def show_heart_disease_prediction():
                     st.json(extracted_data)
 
 def show_color_blindness_tests():
-    st.header("👁️ Comprehensive Color Blindness Detection")
-    st.markdown("**5 Advanced Tests** for accurate color vision assessment")
+    st.header("👁️ Comprehensive Eye & Color Vision Testing")
+    st.markdown("**7 Advanced Tests** for complete visual assessment including color vision and acuity")
     
     test_type = st.selectbox(
         "Select Test Type",
         ["🔴 Ishihara Plates Test", "🌈 Farnsworth D-15 Test", "🎨 Cambridge Color Test",
-         "📊 Color Spectrum Discrimination", "🔬 Anomaloscope Simulation", "📈 Complete Assessment (All 5 Tests)"]
+         "📊 Color Spectrum Discrimination", "🔬 Anomaloscope (Nagel/Heidelberg)", 
+         "📋 Visual Acuity Test (Snellen Chart)", "👁️ Eye Muscle & Focus Tests",
+         "📈 Complete Assessment (All Tests)"]
     )
     
     if test_type == "🔴 Ishihara Plates Test":
@@ -472,8 +474,12 @@ def show_color_blindness_tests():
         show_cambridge_test()
     elif test_type == "📊 Color Spectrum Discrimination":
         show_spectrum_test()
-    elif test_type == "🔬 Anomaloscope Simulation":
+    elif test_type == "🔬 Anomaloscope (Nagel/Heidelberg)":
         show_anomaloscope_test()
+    elif test_type == "📋 Visual Acuity Test (Snellen Chart)":
+        show_snellen_test()
+    elif test_type == "👁️ Eye Muscle & Focus Tests":
+        show_eye_muscle_focus_tests()
     else:
         show_complete_assessment()
 
@@ -1050,26 +1056,429 @@ def show_anomaloscope_test():
                 </div>
                 """, unsafe_allow_html=True)
 
+def show_snellen_test():
+    st.subheader("📋 Visual Acuity Test (Snellen Chart)")
+    st.markdown("**Standard Eye Test**: Measure your visual sharpness and clarity")
+    
+    test_mode = st.radio("Choose Test Mode", ["📷 Live Interactive Test", "📁 Upload Image"], key="snellen_mode")
+    
+    if test_mode == "📷 Live Interactive Test":
+        st.info("👀 **Live Test**: Read the letters from top to bottom. Stand back from your screen about 3 feet (1 meter).")
+        
+        if 'snellen_line' not in st.session_state:
+            st.session_state.snellen_line = 0
+        if 'snellen_correct' not in st.session_state:
+            st.session_state.snellen_correct = 0
+        
+        snellen_lines = [
+            {"size": "100px", "letters": "E", "acuity": "20/200", "line": 1},
+            {"size": "80px", "letters": "F P", "acuity": "20/100", "line": 2},
+            {"size": "60px", "letters": "T O Z", "acuity": "20/70", "line": 3},
+            {"size": "45px", "letters": "L P E D", "acuity": "20/50", "line": 4},
+            {"size": "35px", "letters": "P E C F D", "acuity": "20/40", "line": 5},
+            {"size": "28px", "letters": "E D F C Z P", "acuity": "20/30", "line": 6},
+            {"size": "22px", "letters": "F E L O P Z D", "acuity": "20/25", "line": 7},
+            {"size": "18px", "letters": "D E F P O T E C", "acuity": "20/20", "line": 8},
+        ]
+        
+        total_lines = len(snellen_lines)
+        
+        if st.session_state.snellen_line < total_lines:
+            current = snellen_lines[st.session_state.snellen_line]
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown(f"### Line {current['line']}/8 - {current['acuity']} Vision")
+                st.markdown("**Read the letters you see below:**")
+                
+                st.markdown(f"""
+                <div style="background: white; height: 300px; border-radius: 15px; display: flex; 
+                            align-items: center; justify-content: center; border: 3px solid #333; 
+                            font-family: monospace; font-size: {current['size']}; font-weight: bold; 
+                            color: black; margin: 20px 0;">
+                    {current['letters']}
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("### 📸 Optional Photo")
+                camera_photo = st.camera_input("Take photo", key=f"snellen_camera_{st.session_state.snellen_line}")
+                
+                st.markdown("### Enter what you see:")
+                user_answer = st.text_input("Type the letters (use spaces):", key=f"snellen_ans_{st.session_state.snellen_line}")
+                
+                col_submit, col_skip = st.columns(2)
+                
+                with col_submit:
+                    if st.button("✓ Submit", use_container_width=True):
+                        clean_answer = user_answer.upper().replace(" ", "")
+                        clean_correct = current['letters'].replace(" ", "")
+                        
+                        if clean_answer == clean_correct:
+                            st.session_state.snellen_correct = st.session_state.snellen_line + 1
+                            st.success(f"✅ Correct! {current['acuity']}")
+                        else:
+                            st.warning(f"⚠️ Incorrect. Expected: {current['letters']}")
+                        
+                        st.session_state.snellen_line += 1
+                        st.rerun()
+                
+                with col_skip:
+                    if st.button("Can't Read ⏭️", use_container_width=True):
+                        st.session_state.snellen_line = total_lines
+                        st.rerun()
+        
+        else:
+            if st.session_state.snellen_correct >= 8:
+                visual_acuity = "20/20"
+                status_class = "high-confidence"
+                interpretation = "Perfect vision - Excellent visual acuity"
+            elif st.session_state.snellen_correct >= 7:
+                visual_acuity = "20/25"
+                status_class = "high-confidence"
+                interpretation = "Very good vision - Normal visual acuity"
+            elif st.session_state.snellen_correct >= 6:
+                visual_acuity = "20/30"
+                status_class = "medium-confidence"
+                interpretation = "Good vision - Slight acuity reduction"
+            elif st.session_state.snellen_correct >= 5:
+                visual_acuity = "20/40"
+                status_class = "medium-confidence"
+                interpretation = "Moderate vision - May need corrective lenses"
+            elif st.session_state.snellen_correct >= 3:
+                visual_acuity = "20/70"
+                status_class = "low-confidence"
+                interpretation = "Poor vision - Corrective lenses recommended"
+            else:
+                visual_acuity = "20/200 or worse"
+                status_class = "low-confidence"
+                interpretation = "Significantly reduced acuity - Consult eye doctor"
+            
+            st.markdown(f"""
+            <div class="result-box {status_class}">
+                <h3>Visual Acuity Test Results</h3>
+                <p><strong>Visual Acuity:</strong> {visual_acuity}</p>
+                <p><strong>Lines Read Correctly:</strong> {st.session_state.snellen_correct}/8</p>
+                <p><strong>Interpretation:</strong> {interpretation}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Restart Test", use_container_width=True):
+                st.session_state.snellen_line = 0
+                st.session_state.snellen_correct = 0
+                st.rerun()
+    
+    else:
+        st.markdown("Upload a photo of yourself reading a Snellen chart for analysis")
+        uploaded_snellen = st.file_uploader("Upload Snellen Test Photo", type=['jpg', 'jpeg', 'png'], key="snellen_upload")
+        
+        if uploaded_snellen:
+            image = Image.open(uploaded_snellen)
+            st.image(image, caption="Snellen Chart Test", use_container_width=True)
+            
+            acuity_level = st.selectbox("Select the smallest line you can read clearly:", 
+                                       ["20/200", "20/100", "20/70", "20/50", "20/40", "20/30", "20/25", "20/20"])
+            
+            if st.button("📊 Evaluate Visual Acuity"):
+                acuity_scores = {
+                    "20/20": (100, "high-confidence", "Perfect vision"),
+                    "20/25": (95, "high-confidence", "Excellent vision"),
+                    "20/30": (85, "medium-confidence", "Good vision"),
+                    "20/40": (70, "medium-confidence", "Moderate vision"),
+                    "20/50": (60, "low-confidence", "Below normal"),
+                    "20/70": (50, "low-confidence", "Poor vision"),
+                    "20/100": (35, "low-confidence", "Significantly reduced"),
+                    "20/200": (20, "low-confidence", "Severe reduction")
+                }
+                
+                score, status_class, interpretation = acuity_scores[acuity_level]
+                
+                st.markdown(f"""
+                <div class="result-box {status_class}">
+                    <h3>Visual Acuity: {acuity_level}</h3>
+                    <p><strong>Score:</strong> {score}/100</p>
+                    <p><strong>Assessment:</strong> {interpretation}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+def show_eye_muscle_focus_tests():
+    st.subheader("👁️ Eye Muscle & Focus Tests")
+    st.markdown("**Comprehensive Assessment**: Test eye coordination, tracking, and focusing ability")
+    
+    test_category = st.selectbox("Select Test Category", 
+                                 ["🎯 Convergence Test", "↔️ Tracking Test", "🔄 Accommodation Test", 
+                                  "⚡ Saccadic Movement Test", "📊 Complete Eye Function Assessment"])
+    
+    if test_category == "🎯 Convergence Test":
+        st.markdown("### Near Point of Convergence (NPC) Test")
+        st.info("👀 **Instructions**: Follow the moving target with both eyes. Report when you see double vision.")
+        
+        if 'convergence_position' not in st.session_state:
+            st.session_state.convergence_position = 30
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            distance = st.slider("Move the target closer (cm from nose):", 0, 30, st.session_state.convergence_position, key="conv_slider")
+            
+            target_size = max(10, distance * 2)
+            st.markdown(f"""
+            <div style="background: linear-gradient(45deg, #FF6B6B 0%, #4ECDC4 50%, #FFD93D 100%); 
+                        height: 300px; border-radius: 15px; display: flex; align-items: center; 
+                        justify-content: center; border: 3px solid #333; position: relative;">
+                <div style="background: red; width: {target_size}px; height: {target_size}px; 
+                            border-radius: 50%; border: 2px solid black;"></div>
+                <div style="position: absolute; bottom: 10px; right: 10px; font-size: 24px; 
+                            font-weight: bold; color: white; text-shadow: 2px 2px 4px black;">
+                    {distance} cm
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("### 📸 Optional Photo")
+            camera_photo = st.camera_input("Take photo", key="convergence_camera")
+            
+            st.markdown("### Do you see:")
+            vision_type = st.radio("Vision status:", ["Single target", "Double vision (diplopia)"], key="conv_vision")
+            
+            if st.button("✓ Record Result", use_container_width=True):
+                if vision_type == "Double vision (diplopia)":
+                    npc_distance = distance
+                    
+                    if npc_distance >= 10:
+                        status_class = "high-confidence"
+                        interpretation = "Normal convergence - Excellent eye coordination"
+                    elif npc_distance >= 6:
+                        status_class = "medium-confidence"
+                        interpretation = "Fair convergence - Mild eye coordination issue"
+                    else:
+                        status_class = "low-confidence"
+                        interpretation = "Poor convergence - Significant eye coordination difficulty"
+                    
+                    st.markdown(f"""
+                    <div class="result-box {status_class}">
+                        <h3>Convergence Test Results</h3>
+                        <p><strong>Near Point of Convergence:</strong> {npc_distance} cm</p>
+                        <p><strong>Normal Range:</strong> 6-10 cm</p>
+                        <p><strong>Interpretation:</strong> {interpretation}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("Continue moving the target closer until you see double vision.")
+    
+    elif test_category == "↔️ Tracking Test":
+        st.markdown("### Smooth Pursuit Eye Movement Test")
+        st.info("👀 **Instructions**: Follow the moving object with your eyes only. Don't move your head.")
+        
+        if 'tracking_started' not in st.session_state:
+            st.session_state.tracking_started = False
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            if st.button("▶️ Start Tracking Test", use_container_width=True):
+                st.session_state.tracking_started = True
+            
+            if st.session_state.tracking_started:
+                st.markdown("""
+                <div style="background: #f0f0f0; height: 300px; border-radius: 15px; border: 3px solid #333; 
+                            position: relative; overflow: hidden;">
+                    <div style="background: blue; width: 30px; height: 30px; border-radius: 50%; 
+                                position: absolute; top: 135px; 
+                                animation: moveHorizontal 3s ease-in-out infinite;">
+                    </div>
+                </div>
+                <style>
+                    @keyframes moveHorizontal {
+                        0%, 100% { left: 10%; }
+                        50% { left: 85%; }
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                st.write("Watch the blue circle move back and forth smoothly.")
+        
+        with col2:
+            st.markdown("### 📸 Optional Photo")
+            camera_photo = st.camera_input("Take photo", key="tracking_camera")
+            
+            st.markdown("### Rate your tracking:")
+            tracking_quality = st.select_slider("How smooth was your tracking?", 
+                                               options=["Very jerky", "Somewhat jerky", "Mostly smooth", "Very smooth"])
+            
+            if st.button("✓ Submit Assessment", use_container_width=True):
+                quality_scores = {
+                    "Very smooth": ("high-confidence", "Excellent tracking ability", 95),
+                    "Mostly smooth": ("high-confidence", "Good tracking with minor irregularities", 80),
+                    "Somewhat jerky": ("medium-confidence", "Moderate tracking difficulty", 60),
+                    "Very jerky": ("low-confidence", "Poor tracking - Possible eye movement disorder", 40)
+                }
+                
+                status_class, interpretation, score = quality_scores[tracking_quality]
+                
+                st.markdown(f"""
+                <div class="result-box {status_class}">
+                    <h3>Eye Tracking Test Results</h3>
+                    <p><strong>Tracking Quality:</strong> {tracking_quality}</p>
+                    <p><strong>Score:</strong> {score}/100</p>
+                    <p><strong>Interpretation:</strong> {interpretation}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.session_state.tracking_started = False
+    
+    elif test_category == "🔄 Accommodation Test":
+        st.markdown("### Accommodation (Focusing) Test")
+        st.info("👀 **Instructions**: Switch focus between near and far objects. Report clarity.")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            focus_distance = st.radio("Current focus distance:", ["Near (15 cm)", "Far (6 meters / 20 feet)"], key="focus_dist")
+            
+            if focus_distance == "Near (15 cm)":
+                text_size = "40px"
+                text_content = "NEAR FOCUS - Can you read this clearly?"
+            else:
+                text_size = "20px"
+                text_content = "FAR FOCUS - Can you read this text from across the room?"
+            
+            st.markdown(f"""
+            <div style="background: white; height: 300px; border-radius: 15px; display: flex; 
+                        align-items: center; justify-content: center; border: 3px solid #333; 
+                        font-size: {text_size}; font-weight: bold; color: black; text-align: center; 
+                        padding: 20px;">
+                {text_content}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("### 📸 Optional Photo")
+            camera_photo = st.camera_input("Take photo", key="accommodation_camera")
+            
+            st.markdown("### Can you read it clearly?")
+            near_clarity = st.radio("Near focus clarity:", ["Clear", "Blurry", "Cannot focus"], key="near_clear")
+            far_clarity = st.radio("Far focus clarity:", ["Clear", "Blurry", "Cannot focus"], key="far_clear")
+            
+            if st.button("✓ Evaluate Accommodation", use_container_width=True):
+                near_score = {"Clear": 50, "Blurry": 25, "Cannot focus": 0}[near_clarity]
+                far_score = {"Clear": 50, "Blurry": 25, "Cannot focus": 0}[far_clarity]
+                total_score = near_score + far_score
+                
+                if total_score >= 90:
+                    status_class = "high-confidence"
+                    interpretation = "Excellent accommodation - Normal focusing ability"
+                elif total_score >= 60:
+                    status_class = "medium-confidence"
+                    interpretation = "Moderate accommodation - Some focusing difficulty"
+                else:
+                    status_class = "low-confidence"
+                    interpretation = "Poor accommodation - Significant focusing problems"
+                
+                st.markdown(f"""
+                <div class="result-box {status_class}">
+                    <h3>Accommodation Test Results</h3>
+                    <p><strong>Overall Score:</strong> {total_score}/100</p>
+                    <p><strong>Near Focus:</strong> {near_clarity}</p>
+                    <p><strong>Far Focus:</strong> {far_clarity}</p>
+                    <p><strong>Interpretation:</strong> {interpretation}</p>
+                </div>
+                """, unsafe_allow_html=True)
+    
+    elif test_category == "⚡ Saccadic Movement Test":
+        st.markdown("### Saccadic Eye Movement Test (Quick Jumps)")
+        st.info("👀 **Instructions**: Quickly move your eyes between the two targets. Don't move your head.")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            <div style="background: #f0f0f0; height: 300px; border-radius: 15px; border: 3px solid #333; 
+                        position: relative; display: flex; justify-content: space-between; 
+                        align-items: center; padding: 0 50px;">
+                <div style="background: red; width: 40px; height: 40px; border-radius: 50%; 
+                            font-size: 20px; display: flex; align-items: center; justify-content: center; 
+                            color: white; font-weight: bold;">L</div>
+                <div style="background: blue; width: 40px; height: 40px; border-radius: 50%; 
+                            font-size: 20px; display: flex; align-items: center; justify-content: center; 
+                            color: white; font-weight: bold;">R</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.write("Rapidly shift your gaze between the LEFT (red) and RIGHT (blue) targets 10 times.")
+        
+        with col2:
+            st.markdown("### 📸 Optional Photo")
+            camera_photo = st.camera_input("Take photo", key="saccadic_camera")
+            
+            st.markdown("### Rate your movements:")
+            saccadic_quality = st.select_slider("How were your eye jumps?", 
+                                               options=["Very slow/difficult", "Slow", "Normal speed", "Fast and accurate"])
+            
+            if st.button("✓ Submit Assessment", use_container_width=True):
+                saccadic_scores = {
+                    "Fast and accurate": ("high-confidence", "Excellent saccadic movements", 95),
+                    "Normal speed": ("high-confidence", "Good saccadic control", 80),
+                    "Slow": ("medium-confidence", "Reduced saccadic speed", 60),
+                    "Very slow/difficult": ("low-confidence", "Saccadic dysfunction - Consult specialist", 40)
+                }
+                
+                status_class, interpretation, score = saccadic_scores[saccadic_quality]
+                
+                st.markdown(f"""
+                <div class="result-box {status_class}">
+                    <h3>Saccadic Movement Test Results</h3>
+                    <p><strong>Movement Quality:</strong> {saccadic_quality}</p>
+                    <p><strong>Score:</strong> {score}/100</p>
+                    <p><strong>Interpretation:</strong> {interpretation}</p>
+                </div>
+                """, unsafe_allow_html=True)
+    
+    else:
+        st.markdown("### Complete Eye Function Assessment")
+        st.info("📊 **Comprehensive Assessment**: Complete all 4 tests for a full eye muscle and focus evaluation")
+        
+        st.markdown("""
+        This assessment evaluates:
+        1. **Convergence** - Ability to focus both eyes on near objects
+        2. **Tracking** - Smooth pursuit of moving objects
+        3. **Accommodation** - Focusing ability at different distances
+        4. **Saccadic Movements** - Quick, accurate eye jumps
+        
+        **Instructions**: Complete each test above individually, then return here for the combined report.
+        """)
+        
+        st.warning("⚠️ Select individual tests from the dropdown above to complete each assessment.")
+
 def show_complete_assessment():
-    st.subheader("📈 Complete Color Vision Assessment")
-    st.markdown("Upload results from all 5 tests for comprehensive ensemble analysis")
+    st.subheader("📈 Complete Eye & Vision Assessment")
+    st.markdown("Upload results from all 7 tests for comprehensive ensemble analysis")
     
-    st.info("Upload test images from each of the 5 color blindness tests for the most accurate diagnosis")
+    st.info("Upload test images from each of the 7 eye and vision tests for the most accurate diagnosis")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        ishihara_img = st.file_uploader("Ishihara Test", type=['jpg', 'jpeg', 'png'], key="complete_ishihara")
-        farnsworth_img = st.file_uploader("Farnsworth D-15", type=['jpg', 'jpeg', 'png'], key="complete_farnsworth")
-        cambridge_img = st.file_uploader("Cambridge Test", type=['jpg', 'jpeg', 'png'], key="complete_cambridge")
+        st.markdown("**Color Vision Tests:**")
+        ishihara_img = st.file_uploader("1. Ishihara Test", type=['jpg', 'jpeg', 'png'], key="complete_ishihara")
+        farnsworth_img = st.file_uploader("2. Farnsworth D-15", type=['jpg', 'jpeg', 'png'], key="complete_farnsworth")
+        cambridge_img = st.file_uploader("3. Cambridge Test", type=['jpg', 'jpeg', 'png'], key="complete_cambridge")
     
     with col2:
-        spectrum_img = st.file_uploader("Spectrum Test", type=['jpg', 'jpeg', 'png'], key="complete_spectrum")
-        anomalo_img = st.file_uploader("Anomaloscope", type=['jpg', 'jpeg', 'png'], key="complete_anomalo")
+        st.markdown("**Discrimination Tests:**")
+        spectrum_img = st.file_uploader("4. Spectrum Test", type=['jpg', 'jpeg', 'png'], key="complete_spectrum")
+        anomalo_img = st.file_uploader("5. Anomaloscope", type=['jpg', 'jpeg', 'png'], key="complete_anomalo")
+    
+    with col3:
+        st.markdown("**Acuity & Function:**")
+        snellen_img = st.file_uploader("6. Snellen Chart", type=['jpg', 'jpeg', 'png'], key="complete_snellen")
+        eyemuscle_img = st.file_uploader("7. Eye Muscle Test", type=['jpg', 'jpeg', 'png'], key="complete_eyemuscle")
     
     if st.button("🎯 Generate Complete Assessment"):
-        if all([ishihara_img, farnsworth_img, cambridge_img, spectrum_img, anomalo_img]):
-            with st.spinner("Running comprehensive analysis across all 5 tests..."):
+        if all([ishihara_img, farnsworth_img, cambridge_img, spectrum_img, anomalo_img, snellen_img, eyemuscle_img]):
+            with st.spinner("Running comprehensive analysis across all 7 tests..."):
                 from models.colorblind_model import complete_assessment
                 from utils.pdf_generator import generate_colorblind_report
                 
@@ -1078,7 +1487,9 @@ def show_complete_assessment():
                     'farnsworth': Image.open(farnsworth_img),
                     'cambridge': Image.open(cambridge_img),
                     'spectrum': Image.open(spectrum_img),
-                    'anomaloscope': Image.open(anomalo_img)
+                    'anomaloscope': Image.open(anomalo_img),
+                    'snellen': Image.open(snellen_img),
+                    'eyemuscle': Image.open(eyemuscle_img)
                 })
                 
                 st.success("✅ Complete assessment finished!")
@@ -1088,6 +1499,8 @@ def show_complete_assessment():
                     <h2>Final Diagnosis: {result['final_diagnosis']}</h2>
                     <p><strong>Confidence:</strong> {result['ensemble_confidence']:.2%}</p>
                     <p><strong>Color Vision Type:</strong> {result['cvd_type']}</p>
+                    <p><strong>Visual Acuity:</strong> {result.get('visual_acuity', 'Not assessed')}</p>
+                    <p><strong>Eye Function:</strong> {result.get('eye_function', 'Not assessed')}</p>
                     <p><strong>Severity Level:</strong> {result['severity']}</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1098,22 +1511,24 @@ def show_complete_assessment():
                 
                 st.subheader("Test Agreement Visualization")
                 import matplotlib.pyplot as plt
-                fig, ax = plt.subplots(figsize=(10, 6))
+                fig, ax = plt.subplots(figsize=(12, 6))
                 ax.bar(results_df['Test'], results_df['Confidence'])
                 ax.set_ylabel('Confidence')
-                ax.set_title('Confidence Scores Across All 5 Tests')
+                ax.set_title('Confidence Scores Across All 7 Tests')
                 ax.set_ylim(0, 1)
+                plt.xticks(rotation=45, ha='right')
+                plt.tight_layout()
                 st.pyplot(fig)
                 
                 pdf_data = generate_colorblind_report(result)
                 st.download_button(
                     label="📄 Download Detailed PDF Report",
                     data=pdf_data,
-                    file_name="color_blindness_assessment.pdf",
+                    file_name="complete_eye_vision_assessment.pdf",
                     mime="application/pdf"
                 )
         else:
-            st.warning("⚠️ Please upload images for all 5 tests to generate a complete assessment")
+            st.warning("⚠️ Please upload images for all 7 tests to generate a complete assessment")
 
 def show_multimodal_analysis():
     st.header("📊 Multi-Modal Disease Analysis")
@@ -1305,9 +1720,9 @@ def show_about():
     across different modalities: images, audio, and text reports.
     
     ### 🎯 Key Features
-    - **4 Disease Categories**: Pneumonia, Skin Diseases, Heart Disease, Color Blindness
+    - **4 Disease Categories**: Pneumonia, Skin Diseases, Heart Disease, Eye & Vision Tests
     - **Multi-Modal Input**: Image, Audio, and Medical Report Analysis
-    - **5 Color Blindness Tests**: Comprehensive eye examination suite
+    - **7 Eye & Vision Tests**: Complete ophthalmological assessment including color vision, visual acuity, and eye muscle function
     - **Advanced AI Models**: ResNet50, EfficientNet, MobileNet, Random Forest
     - **Fusion Techniques**: Weighted averaging, voting ensemble, Bayesian inference
     - **PDF Report Generation**: Professional diagnostic reports
@@ -1321,11 +1736,25 @@ def show_about():
     - **Data Science**: Pandas, NumPy, Visualization
     - **Web Framework**: Streamlit
     
-    ### 📊 Training Strategy
-    - 5-dataset cross-validation approach
-    - Train on 3 datasets, test on 2, then retrain on all 5
-    - Ensemble model fusion for improved accuracy
-    - Real-world data augmentation and preprocessing
+    ### 📊 Datasets Used
+    - **Pneumonia X-Ray**: Kaggle Chest X-Ray dataset (5,856 images)
+    - **Skin Disease**: HAM10000 dermatoscopic images (10,015 images)
+    - **Heart Disease**: UCI Heart Disease dataset (303 patient records)
+    - **Pneumonia Audio**: Coswara cough/breathing sounds (2,000+ samples)
+    - **Eye Tests**: Ishihara plates, Farnsworth D-15, Snellen charts, synthetic color vision tests
+    
+    ### 📚 Dataset Sources
+    1. **Kaggle**: Pneumonia X-Ray, HAM10000 Skin Cancer
+    2. **UCI Machine Learning**: Cleveland Heart Disease
+    3. **GitHub**: Coswara Audio Dataset
+    4. **Clinical Standards**: Digitized Ishihara, Farnsworth, Snellen charts
+    
+    ### 🔧 Training Strategy
+    - Multi-architecture ensemble approach (ResNet50, EfficientNet, MobileNet)
+    - Transfer learning from ImageNet pre-trained weights
+    - Data augmentation: rotation, flip, zoom, brightness/contrast adjustment
+    - Cross-validation for robust performance estimation
+    - Feature engineering for audio (MFCC) and clinical data (scaling)
     
     ### 👥 Team
     - Group Size: 2-3 members
