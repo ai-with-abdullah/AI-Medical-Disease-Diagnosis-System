@@ -317,18 +317,18 @@ def show_skin_disease_detection():
     if analysis_mode == "📷 Live Camera Capture":
         st.success("🎥 **Live Camera Mode**: Point your camera at the skin area you want to analyze")
         
-        col1, col2 = st.columns(2)
+        camera_image = st.camera_input("📸 Take a photo of skin area", key="skin_camera")
         
-        with col1:
-            camera_image = st.camera_input("📸 Take a photo of skin area", key="skin_camera")
+        if camera_image:
+            col1, col2 = st.columns(2)
             
-            if camera_image:
+            with col1:
                 image = Image.open(camera_image)
                 st.image(image, caption="Captured Image", use_container_width=True)
-        
-        with col2:
-            if camera_image:
-                if st.button("🔍 Analyze Live Capture", use_container_width=True):
+            
+            with col2:
+                st.markdown("### 🔍 Analysis")
+                if st.button("🔍 Analyze Skin Condition", type="primary", use_container_width=True, key="analyze_skin_camera"):
                     with st.spinner("Analyzing skin image..."):
                         from models.skin_model import analyze_skin_image
                         result = analyze_skin_image(image, model_choice)
@@ -345,8 +345,8 @@ def show_skin_disease_detection():
                         
                         st.subheader("Recommendations")
                         st.info(result['recommendations'])
-            else:
-                st.info("👆 Click the camera button above to take a photo")
+        else:
+            st.info("👆 Click the camera button above to take a photo")
     
     else:
         uploaded_skin = st.file_uploader("Upload Skin Image", type=['jpg', 'jpeg', 'png'], key="skin_upload")
