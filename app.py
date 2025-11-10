@@ -64,16 +64,6 @@ st.markdown("""
 def main():
     st.markdown('<div class="main-header">🏥 AI Multi-Modal Disease Detection System</div>', unsafe_allow_html=True)
     
-    st.warning("""
-    ⚠️ **DEMO MODE**: This application currently uses simulated predictions for demonstration purposes. 
-    To use with real trained models, follow the instructions in `TRAINING_GUIDE.md` to:
-    1. Collect medical datasets
-    2. Train the models using provided architectures
-    3. Load trained weights
-    
-    All AI model architectures, training pipelines, and system integration are fully implemented and ready for your datasets.
-    """)
-    
     st.markdown("""
     ### Advanced Medical AI Diagnostic Platform
     Combining **Computer Vision**, **Deep Learning**, **NLP**, and **Audio Processing** for comprehensive disease detection.
