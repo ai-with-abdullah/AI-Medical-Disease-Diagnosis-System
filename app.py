@@ -588,98 +588,466 @@ def show_ishihara_test():
                     """, unsafe_allow_html=True)
 
 def show_farnsworth_test():
-    st.subheader("Farnsworth D-15 Color Arrangement Test")
-    st.markdown("Arrange colors in order to test color discrimination ability")
-    st.info("This test evaluates your ability to arrange colors in the correct sequence")
+    st.subheader("🎥 Live Farnsworth D-15 Color Arrangement Test")
+    st.markdown("**Interactive Test**: Arrange colors in the correct order")
     
-    uploaded_arrangement = st.file_uploader("Upload Color Arrangement Image", type=['jpg', 'jpeg', 'png'], key="farnsworth")
+    test_mode = st.radio("Choose Test Mode", ["📷 Live Interactive Test", "📁 Upload Image"], key="farnsworth_mode")
     
-    if uploaded_arrangement:
-        image = Image.open(uploaded_arrangement)
-        st.image(image, caption="Color Arrangement Test", use_container_width=True)
+    if test_mode == "📷 Live Interactive Test":
+        st.info("👀 **Live Test**: Arrange the colors below by selecting them in order from left to right")
         
-        if st.button("🔍 Analyze Arrangement"):
-            from models.colorblind_model import analyze_farnsworth
-            result = analyze_farnsworth(image)
+        if 'farnsworth_selected' not in st.session_state:
+            st.session_state.farnsworth_selected = []
+        if 'farnsworth_started' not in st.session_state:
+            st.session_state.farnsworth_started = False
+        
+        colors = [
+            ("🟣 Purple", "#8B4789"),
+            ("🔵 Blue", "#4169E1"),
+            ("🟢 Green", "#32CD32"),
+            ("🟡 Yellow-Green", "#9ACD32"),
+            ("🟡 Yellow", "#FFD700"),
+            ("🟠 Orange", "#FF8C00"),
+            ("🔴 Red", "#DC143C"),
+            ("🟣 Pink", "#FF69B4")
+        ]
+        
+        correct_order = [0, 1, 2, 3, 4, 5, 6, 7]
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("### Select colors in order:")
+            cols = st.columns(4)
+            for idx, (color_name, color_code) in enumerate(colors):
+                with cols[idx % 4]:
+                    if st.button(f"{color_name}", key=f"farn_color_{idx}", disabled=idx in st.session_state.farnsworth_selected):
+                        st.session_state.farnsworth_selected.append(idx)
+                        st.session_state.farnsworth_started = True
+                        st.rerun()
+                    st.markdown(f'<div style="background:{color_code}; height:60px; border-radius:10px; margin:5px;"></div>', unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("### 📸 Optional Photo")
+            camera_photo = st.camera_input("Take photo", key="farnsworth_camera")
             
-            st.markdown(f"""
-            <div class="result-box {result['status_class']}">
-                <h3>{result['result']}</h3>
-                <p><strong>Discrimination Score:</strong> {result['score']}</p>
-                <p><strong>Deficiency Type:</strong> {result['deficiency_type']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("### Your Selection Order:")
+            for idx, color_idx in enumerate(st.session_state.farnsworth_selected):
+                st.write(f"{idx+1}. {colors[color_idx][0]}")
+            
+            if len(st.session_state.farnsworth_selected) == len(colors):
+                if st.button("✓ Submit Test", use_container_width=True):
+                    from models.colorblind_model import analyze_farnsworth
+                    dummy_image = Image.new('RGB', (100, 100))
+                    result = analyze_farnsworth(dummy_image)
+                    
+                    errors = sum([1 for i, idx in enumerate(st.session_state.farnsworth_selected) if idx != correct_order[i]])
+                    score = max(0, 100 - (errors * 12.5))
+                    
+                    if errors == 0:
+                        status_class = "high-confidence"
+                        interpretation = "Perfect! Normal color discrimination"
+                    elif errors <= 2:
+                        status_class = "medium-confidence"
+                        interpretation = "Mild color discrimination difficulty"
+                    else:
+                        status_class = "low-confidence"
+                        interpretation = "Significant color vision deficiency detected"
+                    
+                    st.markdown(f"""
+                    <div class="result-box {status_class}">
+                        <h3>Test Results</h3>
+                        <p><strong>Score:</strong> {score:.1f}%</p>
+                        <p><strong>Errors:</strong> {errors}/8</p>
+                        <p><strong>Interpretation:</strong> {interpretation}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.session_state.farnsworth_selected = []
+                    st.session_state.farnsworth_started = False
+            
+            if st.session_state.farnsworth_started and len(st.session_state.farnsworth_selected) < len(colors):
+                if st.button("🔄 Reset", use_container_width=True):
+                    st.session_state.farnsworth_selected = []
+                    st.rerun()
+    
+    else:
+        st.markdown("Upload color arrangement images to test color discrimination ability")
+        uploaded_arrangement = st.file_uploader("Upload Color Arrangement Image", type=['jpg', 'jpeg', 'png'], key="farnsworth")
+        
+        if uploaded_arrangement:
+            image = Image.open(uploaded_arrangement)
+            st.image(image, caption="Color Arrangement Test", use_container_width=True)
+            
+            if st.button("🔍 Analyze Arrangement"):
+                from models.colorblind_model import analyze_farnsworth
+                result = analyze_farnsworth(image)
+                
+                st.markdown(f"""
+                <div class="result-box {result['status_class']}">
+                    <h3>{result['result']}</h3>
+                    <p><strong>Discrimination Score:</strong> {result['score']}</p>
+                    <p><strong>Deficiency Type:</strong> {result['deficiency_type']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 def show_cambridge_test():
-    st.subheader("Cambridge Color Test")
-    st.markdown("Pattern detection in varying chromatic contrasts")
-    st.info("Upload test patterns to measure color discrimination thresholds")
+    st.subheader("🎥 Live Cambridge Color Test")
+    st.markdown("**Interactive Test**: Detect patterns in varying chromatic contrasts")
     
-    uploaded_cambridge = st.file_uploader("Upload Cambridge Test Image", type=['jpg', 'jpeg', 'png'], key="cambridge")
+    test_mode = st.radio("Choose Test Mode", ["📷 Live Interactive Test", "📁 Upload Image"], key="cambridge_mode")
     
-    if uploaded_cambridge:
-        image = Image.open(uploaded_cambridge)
-        st.image(image, caption="Cambridge Color Test", use_container_width=True)
+    if test_mode == "📷 Live Interactive Test":
+        st.info("👀 **Live Test**: Look at each pattern and identify what shape you see")
         
-        pattern_seen = st.radio("Do you see a pattern (C, circle, square)?", ["Yes", "No"])
+        if 'cambridge_question' not in st.session_state:
+            st.session_state.cambridge_question = 0
+        if 'cambridge_correct' not in st.session_state:
+            st.session_state.cambridge_correct = 0
         
-        if st.button("📊 Evaluate"):
-            from models.colorblind_model import analyze_cambridge
-            result = analyze_cambridge(image, pattern_seen)
+        test_patterns = [
+            {"shape": "C", "colors": ["#90EE90", "#98FB98", "#8FBC8F"], "correct": "C", "difficulty": "Easy"},
+            {"shape": "Circle", "colors": ["#FFB6C1", "#FFC0CB", "#FFE4E1"], "correct": "Circle", "difficulty": "Medium"},
+            {"shape": "Square", "colors": ["#ADD8E6", "#B0E0E6", "#AFEEEE"], "correct": "Square", "difficulty": "Medium"},
+            {"shape": "Triangle", "colors": ["#FAFAD2", "#FFFFE0", "#FFFACD"], "correct": "Triangle", "difficulty": "Hard"},
+            {"shape": "X", "colors": ["#DDA0DD", "#EE82EE", "#DA70D6"], "correct": "X", "difficulty": "Hard"}
+        ]
+        
+        total_questions = len(test_patterns)
+        
+        if st.session_state.cambridge_question < total_questions:
+            current = test_patterns[st.session_state.cambridge_question]
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown(f"### Pattern {st.session_state.cambridge_question + 1}/{total_questions} - {current['difficulty']}")
+                
+                gradient_colors = ", ".join(current['colors'])
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, {gradient_colors});
+                            height: 350px; border-radius: 15px; display: flex; align-items: center; 
+                            justify-content: center; font-size: 100px; font-weight: bold; 
+                            color: rgba(0,0,0,0.05); border: 5px solid #ddd;">
+                    {current['shape']}
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("### 📸 Optional Photo")
+                camera_photo = st.camera_input("Take photo", key=f"cambridge_camera_{st.session_state.cambridge_question}")
+                
+                st.markdown("### What shape do you see?")
+                user_answer = st.selectbox("Select shape:", ["C", "Circle", "Square", "Triangle", "X", "No pattern visible"], 
+                                           key=f"cambridge_ans_{st.session_state.cambridge_question}")
+                
+                if st.button("✓ Submit Answer", use_container_width=True):
+                    if user_answer == current['correct']:
+                        st.session_state.cambridge_correct += 1
+                        st.success("✅ Correct!")
+                    else:
+                        st.warning(f"❌ Incorrect. The pattern was: {current['correct']}")
+                    
+                    st.session_state.cambridge_question += 1
+                    st.rerun()
+        
+        else:
+            score = (st.session_state.cambridge_correct / total_questions) * 100
+            
+            if score >= 80:
+                status_class = "high-confidence"
+                interpretation = "Excellent color discrimination - Normal vision"
+            elif score >= 60:
+                status_class = "medium-confidence"
+                interpretation = "Moderate color discrimination ability"
+            else:
+                status_class = "low-confidence"
+                interpretation = "Difficulty with chromatic contrast - Possible color vision deficiency"
             
             st.markdown(f"""
-            <div class="result-box {result['status_class']}">
-                <h3>{result['diagnosis']}</h3>
-                <p><strong>Threshold Level:</strong> {result['threshold']}</p>
-                <p><strong>Severity:</strong> {result['severity']}</p>
+            <div class="result-box {status_class}">
+                <h3>Cambridge Test Results</h3>
+                <p><strong>Score:</strong> {score:.1f}%</p>
+                <p><strong>Correct:</strong> {st.session_state.cambridge_correct}/{total_questions}</p>
+                <p><strong>Interpretation:</strong> {interpretation}</p>
             </div>
             """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Restart Test", use_container_width=True):
+                st.session_state.cambridge_question = 0
+                st.session_state.cambridge_correct = 0
+                st.rerun()
+    
+    else:
+        st.markdown("Upload test patterns to measure color discrimination thresholds")
+        uploaded_cambridge = st.file_uploader("Upload Cambridge Test Image", type=['jpg', 'jpeg', 'png'], key="cambridge")
+        
+        if uploaded_cambridge:
+            image = Image.open(uploaded_cambridge)
+            st.image(image, caption="Cambridge Color Test", use_container_width=True)
+            
+            pattern_seen = st.radio("Do you see a pattern (C, circle, square)?", ["Yes", "No"])
+            
+            if st.button("📊 Evaluate"):
+                from models.colorblind_model import analyze_cambridge
+                result = analyze_cambridge(image, pattern_seen)
+                
+                st.markdown(f"""
+                <div class="result-box {result['status_class']}">
+                    <h3>{result['diagnosis']}</h3>
+                    <p><strong>Threshold Level:</strong> {result['threshold']}</p>
+                    <p><strong>Severity:</strong> {result['severity']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 def show_spectrum_test():
-    st.subheader("Color Spectrum Discrimination Test")
-    st.markdown("Test ability to distinguish subtle color variations across the spectrum")
+    st.subheader("🎥 Live Color Spectrum Discrimination Test")
+    st.markdown("**Interactive Test**: Distinguish subtle color variations across the spectrum")
     
-    uploaded_spectrum = st.file_uploader("Upload Spectrum Test Image", type=['jpg', 'jpeg', 'png'], key="spectrum")
+    test_mode = st.radio("Choose Test Mode", ["📷 Live Interactive Test", "📁 Upload Image"], key="spectrum_mode")
     
-    if uploaded_spectrum:
-        image = Image.open(uploaded_spectrum)
-        st.image(image, caption="Spectrum Test", use_container_width=True)
+    if test_mode == "📷 Live Interactive Test":
+        st.info("👀 **Live Test**: Select the color that is different from the others")
         
-        if st.button("🌈 Analyze Spectrum Discrimination"):
-            from models.colorblind_model import analyze_spectrum
-            result = analyze_spectrum(image)
+        if 'spectrum_question' not in st.session_state:
+            st.session_state.spectrum_question = 0
+        if 'spectrum_rg_correct' not in st.session_state:
+            st.session_state.spectrum_rg_correct = 0
+        if 'spectrum_by_correct' not in st.session_state:
+            st.session_state.spectrum_by_correct = 0
+        
+        color_tests = [
+            {"type": "Red-Green", "colors": ["#90EE90", "#90EE90", "#FFB6B6", "#90EE90"], "different": 2},
+            {"type": "Red-Green", "colors": ["#FF6B6B", "#FF8888", "#FF6B6B", "#FF6B6B"], "different": 1},
+            {"type": "Red-Green", "colors": ["#98FB98", "#98FB98", "#98FB98", "#FFA5A5"], "different": 3},
+            {"type": "Blue-Yellow", "colors": ["#FFD700", "#FFD700", "#87CEEB", "#FFD700"], "different": 2},
+            {"type": "Blue-Yellow", "colors": ["#87CEEB", "#A0D8FF", "#87CEEB", "#87CEEB"], "different": 1},
+            {"type": "Blue-Yellow", "colors": ["#FFEB3B", "#FFEB3B", "#FFEB3B", "#64B5F6"], "different": 3}
+        ]
+        
+        total_questions = len(color_tests)
+        
+        if st.session_state.spectrum_question < total_questions:
+            current = color_tests[st.session_state.spectrum_question]
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown(f"### Question {st.session_state.spectrum_question + 1}/{total_questions} - {current['type']} Discrimination")
+                st.markdown("**Select the color that looks different:**")
+                
+                cols = st.columns(4)
+                for idx, color in enumerate(current['colors']):
+                    with cols[idx]:
+                        if st.button(f"Color {idx+1}", key=f"spectrum_color_{st.session_state.spectrum_question}_{idx}", use_container_width=True):
+                            if idx == current['different']:
+                                if current['type'] == "Red-Green":
+                                    st.session_state.spectrum_rg_correct += 1
+                                else:
+                                    st.session_state.spectrum_by_correct += 1
+                                st.success("✅ Correct!")
+                            else:
+                                st.error(f"❌ Wrong. The different color was Color {current['different']+1}")
+                            
+                            st.session_state.spectrum_question += 1
+                            st.rerun()
+                        
+                        st.markdown(f'<div style="background:{color}; height:120px; border-radius:10px; margin:5px; border:2px solid #ccc;"></div>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("### 📸 Optional Photo")
+                camera_photo = st.camera_input("Take photo", key=f"spectrum_camera_{st.session_state.spectrum_question}")
+                
+                st.markdown("### Progress:")
+                st.write(f"Question {st.session_state.spectrum_question + 1} of {total_questions}")
+                st.write(f"Red-Green: {st.session_state.spectrum_rg_correct}/3")
+                st.write(f"Blue-Yellow: {st.session_state.spectrum_by_correct}/3")
+        
+        else:
+            rg_score = (st.session_state.spectrum_rg_correct / 3) * 100
+            by_score = (st.session_state.spectrum_by_correct / 3) * 100
+            overall_score = (rg_score + by_score) / 2
+            
+            if overall_score >= 80:
+                status_class = "high-confidence"
+                interpretation = "Excellent spectrum discrimination - Normal vision"
+            elif overall_score >= 60:
+                status_class = "medium-confidence"
+                interpretation = "Moderate spectrum discrimination"
+            else:
+                status_class = "low-confidence"
+                interpretation = "Difficulty with color spectrum - Possible deficiency"
             
             st.markdown(f"""
-            <div class="result-box {result['status_class']}">
-                <h3>{result['result']}</h3>
-                <p><strong>Red-Green Score:</strong> {result['rg_score']:.2%}</p>
-                <p><strong>Blue-Yellow Score:</strong> {result['by_score']:.2%}</p>
-                <p><strong>Overall:</strong> {result['overall']}</p>
+            <div class="result-box {status_class}">
+                <h3>Spectrum Test Results</h3>
+                <p><strong>Overall Score:</strong> {overall_score:.1f}%</p>
+                <p><strong>Red-Green:</strong> {rg_score:.1f}%</p>
+                <p><strong>Blue-Yellow:</strong> {by_score:.1f}%</p>
+                <p><strong>Interpretation:</strong> {interpretation}</p>
             </div>
             """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Restart Test", use_container_width=True):
+                st.session_state.spectrum_question = 0
+                st.session_state.spectrum_rg_correct = 0
+                st.session_state.spectrum_by_correct = 0
+                st.rerun()
+    
+    else:
+        st.markdown("Upload spectrum test images to analyze color discrimination ability")
+        uploaded_spectrum = st.file_uploader("Upload Spectrum Test Image", type=['jpg', 'jpeg', 'png'], key="spectrum")
+        
+        if uploaded_spectrum:
+            image = Image.open(uploaded_spectrum)
+            st.image(image, caption="Spectrum Test", use_container_width=True)
+            
+            if st.button("🌈 Analyze Spectrum Discrimination"):
+                from models.colorblind_model import analyze_spectrum
+                result = analyze_spectrum(image)
+                
+                st.markdown(f"""
+                <div class="result-box {result['status_class']}">
+                    <h3>{result['result']}</h3>
+                    <p><strong>Red-Green Score:</strong> {result['rg_score']:.2%}</p>
+                    <p><strong>Blue-Yellow Score:</strong> {result['by_score']:.2%}</p>
+                    <p><strong>Overall:</strong> {result['overall']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 def show_anomaloscope_test():
-    st.subheader("Anomaloscope Simulation Test")
-    st.markdown("Digital simulation of the gold-standard clinical color vision test")
+    st.subheader("🎥 Live Anomaloscope Simulation Test")
+    st.markdown("**Interactive Test**: Match colors using red-green mixture - gold standard clinical test")
     
-    uploaded_anomalo = st.file_uploader("Upload Anomaloscope Test Result", type=['jpg', 'jpeg', 'png'], key="anomalo")
+    test_mode = st.radio("Choose Test Mode", ["📷 Live Interactive Test", "📁 Upload Image"], key="anomalo_mode")
     
-    if uploaded_anomalo:
-        image = Image.open(uploaded_anomalo)
-        st.image(image, caption="Anomaloscope Test", use_container_width=True)
+    if test_mode == "📷 Live Interactive Test":
+        st.info("👀 **Live Test**: Adjust the red-green mixture to match the reference yellow color")
         
-        if st.button("🔬 Analyze Clinical Test"):
-            from models.colorblind_model import analyze_anomaloscope
-            result = analyze_anomaloscope(image)
+        if 'anomalo_trials' not in st.session_state:
+            st.session_state.anomalo_trials = []
+        if 'anomalo_current_trial' not in st.session_state:
+            st.session_state.anomalo_current_trial = 0
+        
+        reference_colors = [
+            {"yellow": "#FFD700", "optimal_red": 50, "optimal_green": 50},
+            {"yellow": "#FFC107", "optimal_red": 45, "optimal_green": 55},
+            {"yellow": "#FFEB3B", "optimal_red": 55, "optimal_green": 45}
+        ]
+        
+        total_trials = len(reference_colors)
+        
+        if st.session_state.anomalo_current_trial < total_trials:
+            current = reference_colors[st.session_state.anomalo_current_trial]
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown(f"### Trial {st.session_state.anomalo_current_trial + 1}/{total_trials}")
+                st.markdown("**Reference Color (Match this):**")
+                st.markdown(f'<div style="background:{current["yellow"]}; height:150px; border-radius:15px; border:3px solid #333; margin:10px 0;"></div>', unsafe_allow_html=True)
+                
+                st.markdown("**Your Mixture (Adjust sliders):**")
+                red_amount = st.slider("Red", 0, 100, 50, key=f"anomalo_red_{st.session_state.anomalo_current_trial}")
+                green_amount = st.slider("Green", 0, 100, 50, key=f"anomalo_green_{st.session_state.anomalo_current_trial}")
+                
+                mixed_color = f"rgb({int(red_amount * 2.55)}, {int(green_amount * 2.55)}, 0)"
+                st.markdown(f'<div style="background:{mixed_color}; height:150px; border-radius:15px; border:3px solid #333; margin:10px 0;"></div>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("### 📸 Optional Photo")
+                camera_photo = st.camera_input("Take photo", key=f"anomalo_camera_{st.session_state.anomalo_current_trial}")
+                
+                st.markdown("### Color Values:")
+                st.write(f"Red: {red_amount}%")
+                st.write(f"Green: {green_amount}%")
+                
+                if st.button("✓ Submit Match", use_container_width=True):
+                    red_error = abs(red_amount - current['optimal_red'])
+                    green_error = abs(green_amount - current['optimal_green'])
+                    total_error = red_error + green_error
+                    
+                    st.session_state.anomalo_trials.append({
+                        'red': red_amount,
+                        'green': green_amount,
+                        'error': total_error
+                    })
+                    
+                    if total_error <= 10:
+                        st.success("✅ Excellent match!")
+                    elif total_error <= 20:
+                        st.info("👍 Good match!")
+                    else:
+                        st.warning("⚠️ Significant difference detected")
+                    
+                    st.session_state.anomalo_current_trial += 1
+                    st.rerun()
+        
+        else:
+            avg_error = sum(trial['error'] for trial in st.session_state.anomalo_trials) / len(st.session_state.anomalo_trials)
+            red_avg = sum(trial['red'] for trial in st.session_state.anomalo_trials) / len(st.session_state.anomalo_trials)
+            green_avg = sum(trial['green'] for trial in st.session_state.anomalo_trials) / len(st.session_state.anomalo_trials)
+            
+            if avg_error <= 10:
+                status_class = "high-confidence"
+                diagnosis = "Normal Trichromat"
+                interpretation = "Normal color vision - excellent color matching"
+            elif avg_error <= 25:
+                status_class = "medium-confidence"
+                if abs(red_avg - 50) > abs(green_avg - 50):
+                    diagnosis = "Possible Protanomalous"
+                    interpretation = "Possible red-green deficiency (protanomaly)"
+                else:
+                    diagnosis = "Possible Deuteranomalous"
+                    interpretation = "Possible red-green deficiency (deuteranomaly)"
+            else:
+                status_class = "low-confidence"
+                if red_avg < 40:
+                    diagnosis = "Protanopia Indicated"
+                    interpretation = "Significant red deficiency detected"
+                elif green_avg < 40:
+                    diagnosis = "Deuteranopia Indicated"
+                    interpretation = "Significant green deficiency detected"
+                else:
+                    diagnosis = "Color Vision Deficiency"
+                    interpretation = "Significant color matching difficulty"
             
             st.markdown(f"""
-            <div class="result-box {result['status_class']}">
-                <h3>Clinical Diagnosis: {result['diagnosis']}</h3>
-                <p><strong>Type:</strong> {result['cvd_type']}</p>
-                <p><strong>Classification:</strong> {result['classification']}</p>
-                <p><strong>Severity:</strong> {result['severity']}</p>
+            <div class="result-box {status_class}">
+                <h3>Anomaloscope Test Results</h3>
+                <p><strong>Diagnosis:</strong> {diagnosis}</p>
+                <p><strong>Average Error:</strong> {avg_error:.1f}</p>
+                <p><strong>Avg Red Setting:</strong> {red_avg:.1f}%</p>
+                <p><strong>Avg Green Setting:</strong> {green_avg:.1f}%</p>
+                <p><strong>Interpretation:</strong> {interpretation}</p>
             </div>
             """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Restart Test", use_container_width=True):
+                st.session_state.anomalo_trials = []
+                st.session_state.anomalo_current_trial = 0
+                st.rerun()
+    
+    else:
+        st.markdown("Upload anomaloscope test results for clinical analysis")
+        uploaded_anomalo = st.file_uploader("Upload Anomaloscope Test Result", type=['jpg', 'jpeg', 'png'], key="anomalo")
+        
+        if uploaded_anomalo:
+            image = Image.open(uploaded_anomalo)
+            st.image(image, caption="Anomaloscope Test", use_container_width=True)
+            
+            if st.button("🔬 Analyze Clinical Test"):
+                from models.colorblind_model import analyze_anomaloscope
+                result = analyze_anomaloscope(image)
+                
+                st.markdown(f"""
+                <div class="result-box {result['status_class']}">
+                    <h3>Clinical Diagnosis: {result['diagnosis']}</h3>
+                    <p><strong>Type:</strong> {result['cvd_type']}</p>
+                    <p><strong>Classification:</strong> {result['classification']}</p>
+                    <p><strong>Severity:</strong> {result['severity']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 def show_complete_assessment():
     st.subheader("📈 Complete Color Vision Assessment")
