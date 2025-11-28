@@ -1,0 +1,236 @@
+{
+  "ishihara": {
+    "plate_1": {
+      "image": "plate_1.jpg",
+      "correct_answers": [
+        "12"
+      ],
+      "description": "Normal: 12, Red-Green Blind: 1"
+    },
+    "plate_2": {
+      "image": "plate_2.jpg",
+      "correct_answers": [
+        "8"
+      ],
+      "description": "Normal: 8, Red-Green Blind: 3"
+    },
+    "plate_3": {
+      "image": "plate_3.jpg",
+      "correct_answers": [
+        "29"
+      ],
+      "description": "Normal: 29, Red-Green Blind: 70"
+    },
+    "plate_4": {
+      "image": "plate_4.jpg",
+      "correct_answers": [
+        "45"
+      ],
+      "description": "Normal: 45"
+    },
+    "plate_5": {
+      "image": "plate_5.jpg",
+      "correct_answers": [
+        "74"
+      ],
+      "description": "Normal: 74, Red-Green Blind: 21"
+    },
+    "plate_6": {
+      "image": "plate_6.jpg",
+      "correct_answers": [
+        "6"
+      ],
+      "description": "Normal: 6"
+    }
+  },
+  "farnsworth": {
+    "color_1": {
+      "correct_answers": [
+        "yellow",
+        "orange",
+        "red"
+      ],
+      "description": "Warm color sequence"
+    },
+    "color_2": {
+      "correct_answers": [
+        "red",
+        "purple",
+        "blue"
+      ],
+      "description": "Red-Purple-Blue progression"
+    },
+    "color_3": {
+      "correct_answers": [
+        "blue",
+        "cyan",
+        "green"
+      ],
+      "description": "Cool color sequence"
+    },
+    "color_4": {
+      "correct_answers": [
+        "green",
+        "lime",
+        "yellow"
+      ],
+      "description": "Green-Yellow transition"
+    },
+    "color_5": {
+      "correct_answers": [
+        "pink",
+        "magenta",
+        "purple"
+      ],
+      "description": "Pink-Purple sequence"
+    },
+    "color_6": {
+      "correct_answers": [
+        "brown",
+        "orange",
+        "gold"
+      ],
+      "description": "Earth tones arrangement"
+    }
+  },
+  "cambridge": {
+    "pattern_1": {
+      "correct_answers": [
+        "c",
+        "C"
+      ],
+      "description": "Red-Green discrimination - see C shape"
+    },
+    "pattern_2": {
+      "correct_answers": [
+        "triangle"
+      ],
+      "description": "Blue-Yellow test - see triangle"
+    },
+    "pattern_3": {
+      "correct_answers": [
+        "circle"
+      ],
+      "description": "Tritan test - see circle"
+    },
+    "pattern_4": {
+      "correct_answers": [
+        "square"
+      ],
+      "description": "Low contrast red-green - see square"
+    },
+    "pattern_5": {
+      "correct_answers": [
+        "x",
+        "X"
+      ],
+      "description": "High contrast blue-yellow - see X"
+    },
+    "pattern_6": {
+      "correct_answers": [
+        "star"
+      ],
+      "description": "Complex pattern recognition - see star"
+    }
+  },
+  "spectrum": {
+    "spectrum_1": {
+      "correct_answers": [
+        "red",
+        "orange",
+        "red-orange"
+      ],
+      "description": "Distinguish warm spectrum variations"
+    },
+    "spectrum_2": {
+      "correct_answers": [
+        "orange",
+        "yellow",
+        "orange-yellow"
+      ],
+      "description": "Orange-Yellow boundary discrimination"
+    },
+    "spectrum_3": {
+      "correct_answers": [
+        "green",
+        "cyan",
+        "green-cyan"
+      ],
+      "description": "Green-Cyan color transition"
+    },
+    "spectrum_4": {
+      "correct_answers": [
+        "blue",
+        "indigo",
+        "blue-indigo"
+      ],
+      "description": "Blue-Indigo discrimination"
+    },
+    "spectrum_5": {
+      "correct_answers": [
+        "purple",
+        "magenta",
+        "purple-magenta"
+      ],
+      "description": "Purple-Magenta distinction"
+    },
+    "spectrum_6": {
+      "correct_answers": [
+        "full spectrum",
+        "rainbow",
+        "all"
+      ],
+      "description": "Full spectrum recognition"
+    }
+  },
+  "anomaloscope": {
+    "match_1": {
+      "correct_range": [
+        0.9,
+        1.1
+      ],
+      "normal_ratio": 1.0,
+      "description": "Red-Green matching task 1"
+    },
+    "match_2": {
+      "correct_range": [
+        0.85,
+        1.05
+      ],
+      "normal_ratio": 0.95,
+      "description": "Red-Green matching task 2"
+    },
+    "match_3": {
+      "correct_range": [
+        0.95,
+        1.15
+      ],
+      "normal_ratio": 1.05,
+      "description": "Red-Green matching task 3"
+    },
+    "match_4": {
+      "correct_range": [
+        0.75,
+        0.95
+      ],
+      "normal_ratio": 0.85,
+      "description": "Blue-Yellow matching task"
+    },
+    "match_5": {
+      "correct_range": [
+        1.05,
+        1.25
+      ],
+      "normal_ratio": 1.15,
+      "description": "Composite color matching"
+    },
+    "match_6": {
+      "correct_range": [
+        0.9,
+        1.1
+      ],
+      "normal_ratio": 1.0,
+      "description": "Final confirmation match"
+    }
+  }
+}

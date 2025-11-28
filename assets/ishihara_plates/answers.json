@@ -1,0 +1,32 @@
+{
+  "plate_1": {
+    "image": "plate_1.jpg",
+    "correct_answers": ["12"],
+    "description": "Plate 1 - Normal: 12"
+  },
+  "plate_2": {
+    "image": "plate_2.jpg",
+    "correct_answers": ["8"],
+    "description": "Plate 2 - Normal: 8"
+  },
+  "plate_3": {
+    "image": "plate_3.jpg",
+    "correct_answers": ["6"],
+    "description": "Plate 3 - Normal: 6"
+  },
+  "plate_4": {
+    "image": "plate_4.jpg",
+    "correct_answers": ["29"],
+    "description": "Plate 4 - Normal: 29"
+  },
+  "plate_5": {
+    "image": "plate_5.jpg",
+    "correct_answers": ["57"],
+    "description": "Plate 5 - Normal: 57"
+  },
+  "plate_6": {
+    "image": "plate_6.jpg",
+    "correct_answers": ["5"],
+    "description": "Plate 6 - Normal: 5"
+  }
+}
