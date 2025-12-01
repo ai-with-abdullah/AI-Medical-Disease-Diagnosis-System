@@ -452,28 +452,36 @@ The training script (`training_scripts/train_pneumonia_models.py`) includes all 
 
 ## Step 3.1: Download Skin Disease Dataset
 
-### HAM10000 Dataset (Recommended)
-- **Link:** https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000
-- **Size:** 2.7 GB
-- **Classes:** 7 types of skin lesions
+### Option 1: HAM10000 Dataset (Recommended)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000 |
+| **Size** | 2.7 GB |
+| **Images** | 10,015 dermoscopy images |
+| **Classes** | 7 types of skin lesions |
 
-**Alternative:** ISIC Archive
-- **Link:** https://www.isic-archive.com/
-- **Size:** Various
+### Option 2: ISIC Archive (Alternative)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.isic-archive.com/ |
+| **Size** | Various |
+| **Note** | Pre-organized in class folders |
 
-## Step 3.2: Extract and Place Skin Disease Files
+### Option 3: DermNet (Alternative)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.kaggle.com/datasets/shubhamgoel27/dermnet |
+| **Size** | 19,500 images |
+| **Classes** | 23 skin conditions |
 
-After downloading, extract the files:
+## Step 3.2: Extract and Place Files
+
+After downloading HAM10000, extract and place files:
 ```
-training_data/
-└── skin_disease/
-    ├── HAM10000_images_part_1/
-    │   ├── ISIC_0024306.jpg
-    │   ├── ISIC_0024307.jpg
-    │   └── ... (many images)
-    ├── HAM10000_images_part_2/
-    │   └── ... (more images)
-    └── HAM10000_metadata.csv    <- Important! Contains labels
+training_data/skin_disease/
+├── HAM10000_images_part_1/    <- Image folder 1
+├── HAM10000_images_part_2/    <- Image folder 2
+└── HAM10000_metadata.csv      <- Labels file (REQUIRED!)
 ```
 
 ## Step 3.3: Train Skin Disease Model
@@ -482,13 +490,36 @@ training_data/
 python training_scripts/train_skin_model.py
 ```
 
+**The script automatically:**
+1. Detects HAM10000 or pre-organized dataset
+2. Organizes images into class folders (if HAM10000)
+3. Trains ResNet50 with two-phase transfer learning
+4. Applies class balancing for imbalanced data
+5. Saves model to models/weights/
+
 **Training Time:** 20-40 minutes
 
-**Expected Results:**
-- ResNet50: ~93% accuracy
+**Expected Results:** 88-93% accuracy
 
-**Files Created in models/weights/:**
-- skin_resnet50.h5
+## Step 3.4: Skin Disease Classes
+
+The model classifies 7 types of skin lesions:
+
+| Code | Disease Name | Category |
+|------|-------------|----------|
+| nv | Melanocytic Nevus (Mole) | Benign |
+| mel | Melanoma | Malignant |
+| bkl | Benign Keratosis | Benign |
+| bcc | Basal Cell Carcinoma | Malignant |
+| akiec | Actinic Keratosis | Pre-cancerous |
+| vasc | Vascular Lesion | Vascular |
+| df | Dermatofibroma | Benign |
+
+## Step 3.5: Files Created
+
+After training, these files are saved to `models/weights/`:
+- `skin_resnet50.h5` - Trained model
+- `skin_classes.json` - Class mapping info
 
 ---
 
