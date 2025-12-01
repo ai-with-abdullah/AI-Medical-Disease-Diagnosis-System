@@ -17,53 +17,110 @@ This guide explains how to train ALL disease detection models for your AI Medica
 
 ---
 
-# PART 1: HEART DISEASE MODELS (Multiple Large Datasets!)
+# PART 1: HEART DISEASE MODELS (3 Disease Types - Multiple Large Datasets!)
+
+## The 3 Heart Disease Models
+
+This system trains **3 specialized heart disease prediction models**:
+
+| # | Model | Description | Icon |
+|---|-------|-------------|------|
+| 1 | **Generic Cardiovascular Disease** | General heart disease risk assessment (Yes/No) | ❤️ |
+| 2 | **Coronary Artery Disease (CAD)** | Blockage in heart arteries - specific CAD detection | 💔 |
+| 3 | **Cardiac Arrhythmia** | Irregular heartbeat detection and classification | 📈 |
+
+---
 
 ## Available Datasets Summary
 
-| Dataset | Records | Size | Recommended For |
-|---------|---------|------|-----------------|
-| Cardiovascular Disease | 70,000 | 1.5 MB | **PRIMARY - Best for training** |
-| Personal Key Indicators | 319,795 | 25 MB | Large-scale training |
-| Heart Health Indicators | 253,680 | 20 MB | Alternative large dataset |
-| Heart Disease Comprehensive | 1,190 | 100 KB | Combined 5 sources |
-| Heart Failure Prediction | 918 | 50 KB | Quick testing |
-| UCI Arrhythmia | 452 | 96 KB | Arrhythmia detection |
+| Dataset | Records | Size | Usage |
+|---------|---------|------|-------|
+| Cardiovascular Disease | 70,000 | 1.5 MB | **Merged into combined training data** |
+| Personal Key Indicators | 319,795 | 25 MB | Merged into combined training data |
+| Heart Health Indicators | 253,680 | 20 MB | Merged into combined training data |
+| Heart Disease Comprehensive | 1,190 | 100 KB | Merged into combined training data |
+| Heart Failure Prediction | 918 | 50 KB | **YOUR MODEL - Merged into combined data** |
+| UCI Heart Disease (Cleveland) | 303 | 50 KB | Merged into combined training data |
+| UCI Arrhythmia | 452 | 96 KB | **YOUR MODEL - Arrhythmia only (separate)** |
+| MIT-BIH Arrhythmia | 48 ECGs | varies | Reference only (unsupported format) |
+
+**Training Data Usage:**
+- **Generic CVD & CAD Models:** All heart disease CSVs are combined and used to train BOTH models
+- **Arrhythmia Model:** Trained separately using ONLY the UCI arrhythmia.data file
 
 ---
 
 ## Step 1.1: Download Heart Datasets
 
-### Dataset 1: Cardiovascular Disease Dataset (RECOMMENDED - 70,000 records)
+### HEART DISEASE DATASETS (All merged together for Generic CVD & CAD models):
+
+**Important:** All CSV files listed below are combined into a single training dataset used by BOTH the Generic CVD and CAD models. Download any combination - more data = better accuracy!
+
+#### Dataset 1: Cardiovascular Disease Dataset (RECOMMENDED - 70,000 records)
 - **Link:** https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset
 - **Size:** 1.5 MB (70,000 patients!)
 - **Login Required:** Yes (free Kaggle account)
 - **Download:** Click "Download" button, get `archive.zip`, extract `cardio_train.csv`
 
-### Dataset 2: Personal Key Indicators of Heart Disease (319,795 records)
+#### Dataset 2: Personal Key Indicators of Heart Disease (319,795 records)
 - **Link:** https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease
 - **Size:** 25 MB (319,795 patients!)
 - **Download:** Get `heart_2022_with_nans.csv` or `heart_2022_no_nans.csv`
 
-### Dataset 3: Heart Disease Health Indicators (253,680 records)
+#### Dataset 3: Heart Disease Health Indicators (253,680 records)
 - **Link:** https://www.kaggle.com/datasets/alexteboul/heart-disease-health-indicators-dataset
 - **Size:** 20 MB (253,680 patients!)
 - **Download:** Get `heart_disease_health_indicators_BRFSS2015.csv`
 
-### Dataset 4: Heart Disease Comprehensive (1,190 records - Combined 5 Sources)
+#### More Heart Disease Datasets:
+
+#### Dataset 4: Heart Disease Comprehensive (1,190 records - Combined 5 Sources)
 - **Link:** https://www.kaggle.com/datasets/sid321axn/heart-statlog-cleveland-hungary-final
 - **Size:** 100 KB (Cleveland + Hungarian + Switzerland + Long Beach + Statlog)
 - **Download:** Get `heart_statlog_cleveland_hungary_final.csv`
+- **Note:** Classic benchmark data - will be merged with other CSVs for training
 
-### Dataset 5: Heart Failure Prediction (918 records)
+#### Dataset 5: Heart Failure Prediction (918 records) - YOUR TRAINED MODEL
 - **Link:** https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction
 - **Size:** 50 KB
-- **Download:** Get `heart.csv`
+- **Download:** Get `heart.csv` and rename to `heart_failure.csv`
+- **Note:** This is one of the datasets you already trained your model on! Will be merged with other CSVs for training.
 
-### Dataset 6: UCI Arrhythmia (452 records)
+#### Dataset 6: UCI Heart Disease - Cleveland (303 records)
+- **Link:** https://archive.ics.uci.edu/dataset/45/heart+disease
+- **Alt Link:** https://github.com/sharmaroshan/Heart-UCI-Dataset/blob/master/heart.csv
+- **Size:** 50 KB
+- **Download:** Save as `heart.csv`
+- **Note:** Classic benchmark - will be merged with other CSVs for training
+
+### FOR CARDIAC ARRHYTHMIA MODEL:
+
+#### Dataset 7: UCI Arrhythmia (452 records) - YOUR TRAINED MODEL
 - **Link:** https://archive.ics.uci.edu/ml/machine-learning-databases/arrhythmia/arrhythmia.data
 - **Right-click:** "Save As" to download
 - **Size:** 96 KB
+- **Best For:** Arrhythmia Model
+- **Note:** This is one of the datasets you already trained your model on!
+
+### ADDITIONAL DATASETS (Reference Only - Require Custom Processing):
+
+**Note:** The following datasets are listed for reference. They use different formats (ECG waveforms, imaging) and require custom preprocessing not included in the current training scripts.
+
+#### Dataset 8: MIT-BIH Arrhythmia Database (ECG Waveforms)
+- **Link:** https://physionet.org/content/mitdb/1.0.0/
+- **Format:** WFDB (requires PhysioNet wfdb library)
+- **Note:** Not automatically supported by current training pipeline
+
+#### Dataset 9: CAD Research Database (Meta-dataset)
+- **Link:** https://www.nature.com/articles/s41597-019-0206-3
+- **Website:** www.cadataset.com
+- **Contains:** 126 papers, 68 datasets (1992-2018)
+- **Note:** Reference for CAD research and feature importance analysis
+
+#### Dataset 10: CADICA Dataset (2024 - Coronary Angiography)
+- **Link:** https://data.mendeley.com/datasets/p9bpx9ctcv/2
+- **Format:** X-ray angiography images (requires deep learning pipeline)
+- **Note:** For imaging-based CAD research, not clinical feature prediction
 
 ---
 
@@ -97,9 +154,13 @@ python training_scripts/prepare_training_data.py
 
 The script will:
 1. Detect all available datasets automatically
-2. Load and combine data from all sources
+2. Load and combine ALL CSV data into a single unified dataset
 3. Handle different column formats
-4. Create unified training data
+4. Create training data files for all 3 models
+
+**Important Note on Training Data:**
+- **Generic CVD & CAD Models:** Both are trained on the same combined heart disease data (all CSV files merged together)
+- **Arrhythmia Model:** Trained separately on UCI Arrhythmia dataset only
 
 ---
 
@@ -110,9 +171,9 @@ python training_scripts/train_heart_models.py
 ```
 
 **Expected Results (with large datasets):**
-- Generic CVD Model: **90-95% accuracy**
-- CAD Model: **88-93% accuracy**
-- Arrhythmia Model: **85-90% accuracy**
+- Generic CVD Model: **90-95% accuracy** (trained on combined CSVs)
+- CAD Model: **88-93% accuracy** (trained on same combined CSVs as Generic)
+- Arrhythmia Model: **85-90% accuracy** (trained on UCI arrhythmia data only)
 
 **Training Time:**
 - With 70,000 records: 3-5 minutes

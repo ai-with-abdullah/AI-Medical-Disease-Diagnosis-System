@@ -4,7 +4,17 @@ This folder stores trained model weights after running the training scripts.
 
 ## Expected Files After Training
 
-### Heart Disease Models (Random Forest)
+### Heart Disease Models (Random Forest) - 3 Disease Types
+
+The system supports **3 specialized heart disease prediction models**:
+
+| # | Disease Type | Icon | Description |
+|---|--------------|------|-------------|
+| 1 | Generic Cardiovascular Disease | ❤️ | General heart disease risk assessment (Yes/No) |
+| 2 | Coronary Artery Disease (CAD) | 💔 | Blockage in heart arteries - specific CAD detection |
+| 3 | Cardiac Arrhythmia | 📈 | Irregular heartbeat detection and classification |
+
+#### Model Files:
 | File | Description | Training Script |
 |------|-------------|-----------------|
 | `heart_generic_model.pkl` | Generic CVD prediction model | `train_heart_models.py` |
@@ -13,6 +23,14 @@ This folder stores trained model weights after running the training scripts.
 | `heart_cad_scaler.pkl` | Feature scaler for CAD model | `train_heart_models.py` |
 | `heart_arrhythmia_model.pkl` | Cardiac Arrhythmia model | `train_heart_models.py` |
 | `heart_arrhythmia_scaler.pkl` | Feature scaler for arrhythmia model | `train_heart_models.py` |
+
+#### How Training Works:
+- **Generic CVD & CAD Models:** Both trained on the same combined heart disease data (all CSVs from training_data/heart_disease/ merged together)
+- **Arrhythmia Model:** Trained separately on UCI Arrhythmia dataset only (training_data/arrhythmia/arrhythmia.data)
+
+#### Key Dataset Sources:
+- **Heart Disease (Combined):** Multiple Kaggle datasets including https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction
+- **Arrhythmia:** https://archive.ics.uci.edu/ml/machine-learning-databases/arrhythmia/arrhythmia.data
 
 ### Pneumonia Detection Models (CNN)
 | File | Description | Training Script |
