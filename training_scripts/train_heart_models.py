@@ -89,40 +89,56 @@ def load_personal_indicators_dataset(filepath):
     """Load Personal Key Indicators of Heart Disease (319,795 records)
     Files: heart_2022_no_nans.csv OR heart_2022_with_nans.csv
     Source: https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease
+    
+    Supports both 2020 (AgeCategory) and 2022 (State column) versions
     """
     print(f"      Loading Personal Key Indicators Dataset...")
     df = pd.read_csv(filepath)
     print(f"      Loaded {len(df):,} records")
     
+    if 'State' in df.columns:
+        df = df.drop(columns=['State'], errors='ignore')
+    
     age_map = {
         '18-24': 21, '25-29': 27, '30-34': 32, '35-39': 37, '40-44': 42,
         '45-49': 47, '50-54': 52, '55-59': 57, '60-64': 62, '65-69': 67,
-        '70-74': 72, '75-79': 77, '80 or older': 82
+        '70-74': 72, '75-79': 77, '80 or older': 82,
+        'Age 18 to 24': 21, 'Age 25 to 29': 27, 'Age 30 to 34': 32,
+        'Age 35 to 39': 37, 'Age 40 to 44': 42, 'Age 45 to 49': 47,
+        'Age 50 to 54': 52, 'Age 55 to 59': 57, 'Age 60 to 64': 62,
+        'Age 65 to 69': 67, 'Age 70 to 74': 72, 'Age 75 to 79': 77,
+        'Age 80 or older': 82
     }
     
     if 'AgeCategory' in df.columns:
         df['age_years'] = df['AgeCategory'].map(age_map).fillna(50)
     elif 'Age' in df.columns:
-        df['age_years'] = df['Age']
+        if df['Age'].dtype == object:
+            df['age_years'] = df['Age'].map(age_map).fillna(50)
+        else:
+            df['age_years'] = pd.to_numeric(df['Age'], errors='coerce').fillna(50)
     else:
         df['age_years'] = 50
     
     if 'Sex' in df.columns:
-        df['sex'] = (df['Sex'] == 'Male').astype(int)
+        df['sex'] = df['Sex'].apply(lambda x: 1 if str(x).lower() in ['male', 'm', '1'] else 0)
     else:
         df['sex'] = 1
     
     df['cp'] = 0
     
     if 'BMI' in df.columns:
-        df['trestbps'] = (120 + (df['BMI'] - 25) * 2).clip(80, 200)
-        df['chol'] = (200 + (df['BMI'] - 25) * 5).clip(100, 400)
+        bmi = pd.to_numeric(df['BMI'], errors='coerce').fillna(25)
+        df['trestbps'] = (120 + (bmi - 25) * 2).clip(80, 200)
+        df['chol'] = (200 + (bmi - 25) * 5).clip(100, 400)
     else:
         df['trestbps'] = 120
         df['chol'] = 200
     
     if 'Diabetic' in df.columns:
-        df['fbs'] = df['Diabetic'].apply(lambda x: 1 if str(x) in ['Yes', 'Yes (during pregnancy)', '1', '1.0'] else 0)
+        df['fbs'] = df['Diabetic'].apply(lambda x: 1 if str(x).lower() in ['yes', 'yes (during pregnancy)', '1', '1.0', 'true'] else 0)
+    elif 'HadDiabetes' in df.columns:
+        df['fbs'] = df['HadDiabetes'].apply(lambda x: 1 if str(x).lower() in ['yes', '1', '1.0', 'true'] else 0)
     else:
         df['fbs'] = 0
     
@@ -130,18 +146,26 @@ def load_personal_indicators_dataset(filepath):
     df['thalach'] = 220 - df['age_years']
     
     if 'PhysicalActivity' in df.columns:
-        df['exang'] = (df['PhysicalActivity'] == 'No').astype(int)
+        df['exang'] = df['PhysicalActivity'].apply(lambda x: 1 if str(x).lower() in ['no', '0', '0.0', 'false'] else 0)
+    elif 'PhysicalActivities' in df.columns:
+        df['exang'] = df['PhysicalActivities'].apply(lambda x: 1 if str(x).lower() in ['no', '0', '0.0', 'false'] else 0)
     else:
         df['exang'] = 0
     
     feature_cols = ['age_years', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang']
     X = df[feature_cols].values.astype(float)
     
-    if 'HeartDisease' in df.columns:
-        if df['HeartDisease'].dtype == object:
-            y = (df['HeartDisease'] == 'Yes').astype(int).values
+    target_col = None
+    for col in ['HeartDisease', 'HadHeartAttack', 'HadAngina', 'target']:
+        if col in df.columns:
+            target_col = col
+            break
+    
+    if target_col:
+        if df[target_col].dtype == object:
+            y = df[target_col].apply(lambda x: 1 if str(x).lower() in ['yes', '1', '1.0', 'true'] else 0).values
         else:
-            y = df['HeartDisease'].astype(int).values
+            y = (df[target_col] > 0).astype(int).values
     else:
         y = df.iloc[:, 0].astype(int).values
     
@@ -303,10 +327,42 @@ def load_uci_original_dataset(filepath):
     """Load UCI Original Heart Disease Dataset (303 records)
     File: heart.csv
     Source: https://github.com/sharmaroshan/Heart-UCI-Dataset/blob/master/heart.csv
+    
+    Handles various formats including files with/without proper headers
     """
     print(f"      Loading UCI Original Dataset...")
+    
     df = pd.read_csv(filepath)
+    
+    if df.iloc[0, 0] == 'Age' or (isinstance(df.columns[0], str) and df.columns[0].lower() == 'age'):
+        first_row_is_header = False
+        try:
+            float(df.iloc[0, 0])
+        except (ValueError, TypeError):
+            first_row_is_header = True
+        
+        if first_row_is_header:
+            df = pd.read_csv(filepath, skiprows=1)
+    
     print(f"      Loaded {len(df):,} records")
+    
+    col_mapping = {
+        'Age': 'age', 'age': 'age',
+        'Sex': 'sex', 'sex': 'sex',
+        'ChestPainType': 'cp', 'cp': 'cp', 'chest_pain': 'cp',
+        'RestingBP': 'trestbps', 'trestbps': 'trestbps', 'resting_bp': 'trestbps',
+        'Cholesterol': 'chol', 'chol': 'chol', 'cholesterol': 'chol',
+        'FastingBS': 'fbs', 'fbs': 'fbs', 'fasting_bs': 'fbs',
+        'RestingECG': 'restecg', 'restecg': 'restecg', 'resting_ecg': 'restecg',
+        'MaxHR': 'thalach', 'thalach': 'thalach', 'max_hr': 'thalach',
+        'ExerciseAngina': 'exang', 'exang': 'exang', 'exercise_angina': 'exang',
+        'target': 'target', 'Target': 'target', 'HeartDisease': 'target'
+    }
+    df = df.rename(columns=col_mapping)
+    
+    for col in df.columns:
+        if df[col].dtype == object:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
     
     feature_cols = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang']
     
@@ -316,8 +372,22 @@ def load_uci_original_dataset(filepath):
     else:
         X = df[feature_cols].values.astype(float)
     
-    target_col = df.columns[-1]
-    y = (df[target_col] > 0).astype(int).values
+    nan_mask = np.isnan(X)
+    if nan_mask.any():
+        for i in range(X.shape[1]):
+            col = X[:, i]
+            mask = np.isnan(col)
+            if mask.any():
+                col_mean = np.nanmean(col)
+                if np.isnan(col_mean):
+                    col_mean = 0.0
+                col[mask] = col_mean
+    
+    if 'target' in df.columns:
+        y = (pd.to_numeric(df['target'], errors='coerce').fillna(0) > 0).astype(int).values
+    else:
+        target_col = df.columns[-1]
+        y = (pd.to_numeric(df[target_col], errors='coerce').fillna(0) > 0).astype(int).values
     
     return X, y
 
