@@ -145,30 +145,26 @@ training_data/
 
 ---
 
-## Step 1.3: Prepare Heart Data
+## Step 1.3: Train Heart Models (ONE COMMAND!)
 
 Open Terminal and run:
 ```bash
-python training_scripts/prepare_training_data.py
+python training_scripts/train_heart_models.py
 ```
 
-The script will:
-1. Detect all available datasets automatically
-2. Load and combine ALL CSV data into a single unified dataset
-3. Handle different column formats
-4. Create training data files for all 3 models
+**That's it!** The script automatically:
+1. Detects all available datasets in training_data/heart_disease/
+2. Loads and combines ALL CSV data into a unified dataset
+3. Handles different column formats automatically
+4. Loads arrhythmia data separately from training_data/arrhythmia/
+5. Trains all 3 models with optimized settings
+6. Saves trained models to models/weights/
+
+**No code changes needed - just download datasets and run!**
 
 **Important Note on Training Data:**
 - **Generic CVD & CAD Models:** Both are trained on the same combined heart disease data (all CSV files merged together)
 - **Arrhythmia Model:** Trained separately on UCI Arrhythmia dataset only
-
----
-
-## Step 1.4: Train Heart Models
-
-```bash
-python training_scripts/train_heart_models.py
-```
 
 **Expected Results (with large datasets):**
 - Generic CVD Model: **90-95% accuracy** (trained on combined CSVs)
@@ -574,19 +570,16 @@ Run these commands in order:
 # Step 1: Navigate to project folder
 cd AI-Medical-Disease-Diagnosis-System-main
 
-# Step 2: Prepare heart disease data
-python training_scripts/prepare_training_data.py
-
-# Step 3: Train heart disease models (2-3 minutes)
+# Step 2: Train heart disease models (2-3 minutes) - ONE COMMAND!
 python training_scripts/train_heart_models.py
 
-# Step 4: Train pneumonia models (1-3 hours depending on data)
+# Step 3: Train pneumonia models (1-3 hours depending on data)
 python training_scripts/train_pneumonia_models.py
 
-# Step 5: Train skin disease model (20-40 minutes)
+# Step 4: Train skin disease model (20-40 minutes)
 python training_scripts/train_skin_model.py
 
-# Step 6: Restart the app to use new models
+# Step 5: Restart the app to use new models
 streamlit run app.py
 ```
 
@@ -665,10 +658,10 @@ After training, these files will be in `models/weights/`:
 
 | Script | Purpose |
 |--------|---------|
-| `training_scripts/prepare_training_data.py` | Prepares heart disease CSV data |
-| `training_scripts/train_heart_models.py` | Trains 3 heart disease models |
+| `training_scripts/train_heart_models.py` | **ALL-IN-ONE:** Auto-detects datasets, prepares data, trains all 3 heart models |
 | `training_scripts/train_pneumonia_models.py` | Trains 3 pneumonia CNN models (auto-detects datasets) |
 | `training_scripts/train_skin_model.py` | Trains skin disease CNN model |
+| `training_scripts/prepare_training_data.py` | (Optional) Advanced data preparation for all models |
 
 ---
 
