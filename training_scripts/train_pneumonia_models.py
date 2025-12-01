@@ -544,6 +544,67 @@ def combine_datasets(datasets, output_dir):
     return train_dir, val_dir
 
 
+def auto_preprocess_if_needed(pneumonia_dir):
+    """Automatically run preprocessing for raw datasets if needed"""
+    print("\n[Checking if preprocessing is needed...]")
+    
+    needs_preprocessing = False
+    
+    rsna_dicom = os.path.join(pneumonia_dir, 'rsna', 'stage_2_train_images')
+    rsna_png = os.path.join(pneumonia_dir, 'rsna', 'images_png')
+    if os.path.exists(rsna_dicom) and not os.path.exists(rsna_png):
+        needs_preprocessing = True
+        print("   - RSNA DICOM files detected, needs conversion")
+    
+    nih_raw = os.path.join(pneumonia_dir, 'nih', 'images')
+    nih_org = os.path.join(pneumonia_dir, 'nih', 'organized')
+    if os.path.exists(nih_raw) and not os.path.exists(nih_org):
+        needs_preprocessing = True
+        print("   - NIH raw data detected, needs organization")
+    
+    for nih_path in ['nih_resized', 'nih_224x224']:
+        nih_dir = os.path.join(pneumonia_dir, nih_path)
+        if os.path.exists(nih_dir):
+            org_dir = os.path.join(nih_dir, 'organized')
+            if not os.path.exists(org_dir):
+                needs_preprocessing = True
+                print(f"   - NIH Resized raw data detected, needs organization")
+                break
+    
+    chexpert_raw = os.path.join(pneumonia_dir, 'chexpert', 'train')
+    chexpert_org = os.path.join(pneumonia_dir, 'chexpert', 'organized')
+    if os.path.exists(chexpert_raw) and not os.path.exists(chexpert_org):
+        needs_preprocessing = True
+        print("   - CheXpert raw data detected, needs organization")
+    
+    vindr_train = os.path.join(pneumonia_dir, 'vindr', 'train')
+    vindr_normal = os.path.join(pneumonia_dir, 'vindr', 'NORMAL')
+    if os.path.exists(vindr_train) and not os.path.exists(vindr_normal):
+        needs_preprocessing = True
+        print("   - VinDr-CXR DICOM files detected, needs conversion")
+    
+    if needs_preprocessing:
+        print("\n[Running automatic preprocessing...]")
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            
+            import sys
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+            
+            from training_scripts.preprocess_pneumonia_data import run_all_preprocessing
+            run_all_preprocessing()
+        except ImportError as e:
+            print(f"   Warning: Could not import preprocessing module: {e}")
+            print(f"   Run manually from project root: python training_scripts/preprocess_pneumonia_data.py")
+        except Exception as e:
+            print(f"   Warning: Preprocessing error: {e}")
+            print(f"   Run manually from project root: python training_scripts/preprocess_pneumonia_data.py")
+    else:
+        print("   No preprocessing needed - datasets are ready")
+
+
 def train_pneumonia_models():
     print("=" * 60)
     print("TRAINING PNEUMONIA DETECTION MODELS")
@@ -557,6 +618,8 @@ def train_pneumonia_models():
     weights_dir = os.path.join(project_dir, 'models', 'weights')
 
     os.makedirs(weights_dir, exist_ok=True)
+
+    auto_preprocess_if_needed(pneumonia_dir)
 
     # Detect available datasets
     datasets, total_images = detect_datasets(pneumonia_dir)

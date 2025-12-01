@@ -153,65 +153,34 @@ The script will:
 
 ---
 
-## Dataset-Specific Instructions
+## Preprocessing (Automatic!)
 
-### NIH ChestX-ray14 Preprocessing
+**Preprocessing is now automatic!** The training script handles all preprocessing for you.
 
-The NIH dataset needs to be organized by class. Run this Python script:
+### What's Preprocessed Automatically:
 
-```python
-import pandas as pd
-import shutil
-import os
+| Dataset | Preprocessing | Done Automatically |
+|---------|--------------|-------------------|
+| RSNA | DICOM to PNG conversion | Yes |
+| NIH ChestX-ray14 | Extract pneumonia/normal cases | Yes |
+| NIH Resized 224x224 | Organize by class | Yes |
+| VinDr-CXR | DICOM conversion + organization | Yes |
+| CheXpert | Extract pneumonia-related cases | Yes |
 
-# Load metadata
-df = pd.read_csv('training_data/pneumonia/nih/Data_Entry_2017.csv')
+### Optional: Run Preprocessing Manually
 
-# Filter pneumonia and normal cases
-pneumonia = df[df['Finding Labels'].str.contains('Pneumonia')]
-normal = df[df['Finding Labels'] == 'No Finding'].sample(n=len(pneumonia))
-
-# Create organized folders
-os.makedirs('training_data/pneumonia/nih/organized/PNEUMONIA', exist_ok=True)
-os.makedirs('training_data/pneumonia/nih/organized/NORMAL', exist_ok=True)
-
-# Copy images
-for _, row in pneumonia.iterrows():
-    src = f"training_data/pneumonia/nih/images/{row['Image Index']}"
-    dst = f"training_data/pneumonia/nih/organized/PNEUMONIA/{row['Image Index']}"
-    if os.path.exists(src):
-        shutil.copy(src, dst)
-
-for _, row in normal.iterrows():
-    src = f"training_data/pneumonia/nih/images/{row['Image Index']}"
-    dst = f"training_data/pneumonia/nih/organized/NORMAL/{row['Image Index']}"
-    if os.path.exists(src):
-        shutil.copy(src, dst)
-
-print("Done! Images organized.")
+If you want to preprocess before training:
+```bash
+python training_scripts/preprocess_pneumonia_data.py
 ```
 
-### RSNA DICOM to PNG Conversion
+This will:
+- Check all datasets for raw data
+- Convert DICOM files to PNG
+- Organize images into NORMAL/PNEUMONIA folders
+- Balance classes for optimal training
 
-```python
-import pydicom
-from PIL import Image
-import numpy as np
-import os
-
-dicom_dir = 'training_data/pneumonia/rsna/stage_2_train_images/'
-output_dir = 'training_data/pneumonia/rsna/images_png/'
-os.makedirs(output_dir, exist_ok=True)
-
-for f in os.listdir(dicom_dir):
-    if f.endswith('.dcm'):
-        dcm = pydicom.dcmread(os.path.join(dicom_dir, f))
-        img = dcm.pixel_array
-        img = (img / img.max() * 255).astype(np.uint8)
-        Image.fromarray(img).save(os.path.join(output_dir, f.replace('.dcm', '.png')))
-
-print("Done! DICOM files converted to PNG.")
-```
+**Note:** If you skip this step, the training script will automatically detect and preprocess raw data!
 
 ---
 

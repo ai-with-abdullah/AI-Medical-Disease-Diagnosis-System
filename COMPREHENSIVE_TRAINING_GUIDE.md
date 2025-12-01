@@ -371,63 +371,27 @@ training_data/
 
 ---
 
-## Step 2.4: Dataset-Specific Preprocessing
+## Step 2.4: Preprocessing (Automatic!)
 
-### For RSNA Dataset (DICOM to PNG conversion):
-```python
-import pydicom
-from PIL import Image
-import numpy as np
-import os
+**Good news:** Preprocessing is now fully automatic! The training script will automatically:
+- Convert RSNA DICOM files to PNG
+- Extract pneumonia and normal cases from NIH datasets
+- Organize VinDr-CXR and CheXpert data
+- Balance classes for optimal training
 
-def convert_dicom_to_png(dicom_path, output_path):
-    dcm = pydicom.dcmread(dicom_path)
-    img = dcm.pixel_array
-    img = (img / img.max() * 255).astype(np.uint8)
-    Image.fromarray(img).save(output_path)
-
-# Convert all DICOM files
-dicom_dir = 'training_data/pneumonia/rsna/stage_2_train_images/'
-output_dir = 'training_data/pneumonia/rsna/images_png/'
-os.makedirs(output_dir, exist_ok=True)
-
-for f in os.listdir(dicom_dir):
-    if f.endswith('.dcm'):
-        convert_dicom_to_png(
-            os.path.join(dicom_dir, f),
-            os.path.join(output_dir, f.replace('.dcm', '.png'))
-        )
+**Optional: Run preprocessing manually (before training):**
+```bash
+python training_scripts/preprocess_pneumonia_data.py
 ```
 
-### For NIH Dataset (Extract Pneumonia cases):
-```python
-import pandas as pd
-import shutil
-import os
+This preprocessing script handles:
+- **RSNA Dataset:** DICOM to PNG conversion
+- **NIH ChestX-ray14:** Extracts pneumonia and normal cases, balances classes
+- **NIH Resized 224x224:** Organizes into NORMAL/PNEUMONIA folders
+- **VinDr-CXR:** DICOM conversion and label-based organization
+- **CheXpert:** Extracts pneumonia-related and normal cases
 
-# Load metadata
-df = pd.read_csv('training_data/pneumonia/nih/Data_Entry_2017.csv')
-
-# Filter pneumonia and normal cases
-pneumonia = df[df['Finding Labels'].str.contains('Pneumonia')]
-normal = df[df['Finding Labels'] == 'No Finding'].sample(n=len(pneumonia))  # Balance classes
-
-# Copy to organized folders
-os.makedirs('training_data/pneumonia/nih/organized/PNEUMONIA', exist_ok=True)
-os.makedirs('training_data/pneumonia/nih/organized/NORMAL', exist_ok=True)
-
-for _, row in pneumonia.iterrows():
-    src = f"training_data/pneumonia/nih/images/{row['Image Index']}"
-    dst = f"training_data/pneumonia/nih/organized/PNEUMONIA/{row['Image Index']}"
-    if os.path.exists(src):
-        shutil.copy(src, dst)
-
-for _, row in normal.iterrows():
-    src = f"training_data/pneumonia/nih/images/{row['Image Index']}"
-    dst = f"training_data/pneumonia/nih/organized/NORMAL/{row['Image Index']}"
-    if os.path.exists(src):
-        shutil.copy(src, dst)
-```
+**Note:** If you skip this step, the training script will automatically detect raw data and preprocess it before training!
 
 ---
 
@@ -460,59 +424,27 @@ The training script automatically detects which datasets are present and combine
 
 ---
 
-## Step 2.6: Training Tips for Maximum Accuracy
+## Step 2.6: Training Features (Built-in!)
 
-### Tip 1: Use Data Augmentation
-The training script includes these augmentations:
-- Rotation: 20 degrees
-- Width/Height shift: 20%
-- Horizontal flip: Yes
-- Zoom: 20%
+The training script (`training_scripts/train_pneumonia_models.py`) includes all best practices automatically:
 
-### Tip 2: Use Class Weights for Imbalanced Data
-```python
-from sklearn.utils.class_weight import compute_class_weight
+### Built-in Features:
 
-class_weights = compute_class_weight(
-    'balanced',
-    classes=np.unique(train_labels),
-    y=train_labels
-)
-```
+| Feature | Description | Benefit |
+|---------|-------------|---------|
+| **Data Augmentation** | Rotation (20°), shifts (20%), flip, zoom (20%) | Prevents overfitting |
+| **Class Weights** | Auto-calculated balanced weights | Handles imbalanced data |
+| **Learning Rate Scheduling** | ReduceLROnPlateau (factor=0.5, patience=2) | Optimal convergence |
+| **Early Stopping** | Patience=5, restores best weights | Prevents overtraining |
+| **Fine-tuning** | Unfreezes last 20 layers in Phase 2 | Maximum accuracy |
+| **Auto Batch Size** | Adjusts based on dataset size | Optimal memory usage |
+| **Multi-phase Training** | Phase 1: frozen base, Phase 2: fine-tune | Better transfer learning |
 
-### Tip 3: Use Learning Rate Scheduling
-```python
-from tensorflow.keras.callbacks import ReduceLROnPlateau
+### Training Phases:
+1. **Phase 1:** Train with frozen base model (ImageNet weights)
+2. **Phase 2:** Fine-tune last 20 layers with lower learning rate (1e-5)
 
-lr_scheduler = ReduceLROnPlateau(
-    monitor='val_accuracy',
-    factor=0.5,
-    patience=2,
-    min_lr=1e-6
-)
-```
-
-### Tip 4: Use Early Stopping
-```python
-from tensorflow.keras.callbacks import EarlyStopping
-
-early_stop = EarlyStopping(
-    monitor='val_accuracy',
-    patience=5,
-    restore_best_weights=True
-)
-```
-
-### Tip 5: Fine-tune Pre-trained Layers
-After initial training, unfreeze some base model layers:
-```python
-# Unfreeze last 20 layers
-for layer in base_model.layers[-20:]:
-    layer.trainable = True
-
-# Recompile with lower learning rate
-model.compile(optimizer=Adam(1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
-```
+**No manual configuration needed** - just run the training command!
 
 ---
 
