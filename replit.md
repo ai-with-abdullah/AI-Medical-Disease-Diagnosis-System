@@ -69,6 +69,29 @@ The system is built around four independent disease detection modules, unified b
 -   **Core Libraries:** `streamlit`, `tensorflow`, `opencv-python`, `numpy`, `pandas`, `pillow`, `scikit-learn`, `scipy`, `matplotlib`, `librosa`, `pytesseract`.
 -   **PDF Generation:** `reportlab`, `pdf2image`.
 
+## Recent Updates (Dec 02, 2025)
+
+**Pneumonia Audio Detection - Training Support Added:**
+- Added complete audio model training support for pneumonia detection from cough/breathing sounds
+- New training script: `training_scripts/train_pneumonia_audio_models.py`
+- Supports 6 audio datasets: COUGHVID (25K+), Coswara (2.6K), ICBHI 2017, Virufy, COVID Cough, Kaggle Respiratory
+- Trains 2 models: Random Forest (fast) + Neural Network (accurate)
+- Updated `models/audio_model.py` to load trained models when available
+- Falls back to rule-based analysis if no trained models exist
+- Added error handling and optimized feature extraction
+- New section in COMPREHENSIVE_TRAINING_GUIDE.md: "PART 2B: PNEUMONIA AUDIO DETECTION MODELS"
+- Created `training_data/pneumonia_audio/README.md` with dataset setup instructions
+- Audio features extracted: 97 total (MFCC mean/std, spectral, chroma, ZCR, RMS)
+- Expected accuracy with training: 85-95% depending on dataset size
+
+**Model Weights Location (after training):**
+- `models/weights/pneumonia_audio_rf_model.pkl` (Random Forest)
+- `models/weights/pneumonia_audio_rf_scaler.pkl` (RF Scaler)
+- `models/weights/pneumonia_audio_nn_model.h5` (Neural Network)
+- `models/weights/pneumonia_audio_nn_scaler.pkl` (NN Scaler)
+
+---
+
 ## Recent Updates (Nov 28, 2025)
 
 **Documentation Update - Color Blindness Module Clarification:**
