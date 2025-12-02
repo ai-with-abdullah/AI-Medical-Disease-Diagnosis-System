@@ -19,7 +19,7 @@ def multimodal_fusion(inputs):
             modality_predictions.append(image_result['prediction'])
             modality_confidences.append(image_result['confidence'])
             modality_names.append('X-Ray Image')
-        elif disease_type == "Skin Disease":
+        elif disease_type == "Skin Cancer":
             image_result = analyze_skin_image(inputs['image'], 'Ensemble')
             modality_predictions.append(image_result['disease'])
             modality_confidences.append(image_result['confidence'])

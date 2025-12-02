@@ -6,9 +6,9 @@ from PIL import Image
 import cv2
 import os
 
-SKIN_DISEASES = [
-    'Acne', 'Eczema', 'Melanoma', 'Psoriasis', 'Dermatitis',
-    'Rosacea', 'Normal Skin'
+SKIN_CANCER_DEMO_CLASSES = [
+    'Melanoma', 'Melanocytic Nevus (Mole)', 'Basal Cell Carcinoma',
+    'Benign Keratosis', 'Actinic Keratosis', 'Vascular Lesion', 'Dermatofibroma'
 ]
 
 # HAM10000 dataset classes mapping
@@ -27,7 +27,7 @@ TRAINED_MODEL_LOADED = False
 TRAINED_MODEL = None
 
 def load_trained_model():
-    """Load trained skin disease model if it exists"""
+    """Load trained skin cancer model if it exists"""
     global TRAINED_MODEL_LOADED, TRAINED_MODEL
     
     if TRAINED_MODEL_LOADED:
@@ -38,12 +38,12 @@ def load_trained_model():
     if os.path.exists(model_path):
         try:
             TRAINED_MODEL = keras.models.load_model(model_path)
-            print(f"✅ Loaded trained skin disease model from {model_path}")
+            print(f"Loaded trained skin cancer model from {model_path}")
         except Exception as e:
-            print(f"⚠️ Error loading skin model: {e}. Using demo mode.")
+            print(f"Error loading skin model: {e}. Using demo mode.")
             TRAINED_MODEL = None
     else:
-        print(f"⚠️ Skin model weights not found at {model_path}. Using demo mode.")
+        print(f"Skin model weights not found at {model_path}. Using demo mode.")
         TRAINED_MODEL = None
     
     TRAINED_MODEL_LOADED = True
@@ -59,7 +59,7 @@ def preprocess_skin_image(image_pil, target_size=(224, 224)):
     return img_batch
 
 def analyze_skin_image(image_pil, model_choice):
-    """Analyze skin image for disease detection"""
+    """Analyze skin image for cancer detection"""
     img_preprocessed = preprocess_skin_image(image_pil)
     
     # Load trained model
@@ -86,7 +86,7 @@ def analyze_skin_image(image_pil, model_choice):
         }
 
 def get_single_skin_prediction(img_preprocessed, model_name):
-    """Get prediction from skin disease model"""
+    """Get prediction from skin cancer model"""
     
     if TRAINED_MODEL is not None:
         # PRODUCTION MODE: Use trained model
@@ -103,14 +103,14 @@ def get_single_skin_prediction(img_preprocessed, model_name):
             disease = HAM10000_NAMES.get(disease_code, disease_code)
         else:
             # Custom 7-class model
-            disease = SKIN_DISEASES[predicted_class_idx] if predicted_class_idx < len(SKIN_DISEASES) else 'Unknown'
+            disease = SKIN_CANCER_DEMO_CLASSES[predicted_class_idx] if predicted_class_idx < len(SKIN_CANCER_DEMO_CLASSES) else 'Unknown'
         
         return disease, confidence
     
     else:
-        # DEMO MODE: Use simulated predictions
-        disease_idx = np.random.randint(0, len(SKIN_DISEASES))
-        disease = SKIN_DISEASES[disease_idx]
+        # DEMO MODE: Use simulated predictions for skin cancer
+        disease_idx = np.random.randint(0, len(SKIN_CANCER_DEMO_CLASSES))
+        disease = SKIN_CANCER_DEMO_CLASSES[disease_idx]
         
         base_confidence = np.random.uniform(0.70, 0.95)
         confidence = base_confidence
@@ -118,45 +118,33 @@ def get_single_skin_prediction(img_preprocessed, model_name):
         return disease, confidence
 
 def get_disease_category(disease):
-    """Get disease category for classification"""
+    """Get skin cancer category for classification"""
     categories = {
-        'Acne': 'Inflammatory',
-        'Eczema': 'Inflammatory',
-        'Melanoma': 'Cancerous',
-        'Psoriasis': 'Autoimmune',
-        'Dermatitis': 'Inflammatory',
-        'Rosacea': 'Chronic',
-        'Normal Skin': 'Healthy',
+        'Melanoma': 'Malignant - High Risk',
         'Melanocytic Nevus (Mole)': 'Benign',
         'Benign Keratosis': 'Benign',
-        'Basal Cell Carcinoma': 'Cancerous',
+        'Basal Cell Carcinoma': 'Malignant - Medium Risk',
         'Actinic Keratosis': 'Pre-cancerous',
-        'Vascular Lesion': 'Vascular',
+        'Vascular Lesion': 'Benign - Vascular',
         'Dermatofibroma': 'Benign'
     }
     return categories.get(disease, 'Unknown')
 
 def get_recommendations(disease):
-    """Get treatment recommendations for detected disease"""
+    """Get treatment recommendations for detected skin cancer condition"""
     recommendations = {
-        'Acne': 'Consult a dermatologist for proper acne treatment. Maintain good skin hygiene and avoid touching affected areas.',
-        'Eczema': 'Keep skin moisturized and avoid triggers. Consider antihistamines and topical corticosteroids under medical supervision.',
-        'Melanoma': 'URGENT: Consult an oncologist immediately for biopsy and treatment options. Early detection is crucial.',
-        'Psoriasis': 'Seek dermatological care. Treatment may include topical treatments, phototherapy, or systemic medications.',
-        'Dermatitis': 'Identify and avoid irritants. Use hypoallergenic products and keep skin moisturized.',
-        'Rosacea': 'Avoid triggers like spicy foods, alcohol, and extreme temperatures. Consult a dermatologist for topical treatments.',
-        'Normal Skin': 'Your skin appears healthy. Maintain good skincare routine and sun protection.',
-        'Melanocytic Nevus (Mole)': 'Monitor for changes in size, shape, or color. Consult dermatologist if changes occur.',
-        'Benign Keratosis': 'Generally harmless. Consult dermatologist if irritation occurs or for cosmetic removal.',
-        'Basal Cell Carcinoma': 'IMPORTANT: Consult dermatologist or oncologist for treatment. Usually treatable with early detection.',
-        'Actinic Keratosis': 'Pre-cancerous condition. Consult dermatologist for treatment to prevent progression to skin cancer.',
-        'Vascular Lesion': 'Usually benign. Consult dermatologist for evaluation and treatment options if needed.',
-        'Dermatofibroma': 'Benign growth. Usually no treatment needed unless causing discomfort or cosmetic concerns.'
+        'Melanoma': 'URGENT: Consult an oncologist immediately for biopsy and treatment options. Early detection is crucial for melanoma treatment success.',
+        'Melanocytic Nevus (Mole)': 'Monitor for changes in size, shape, or color (ABCDE rule). Consult dermatologist if any changes occur.',
+        'Benign Keratosis': 'Generally harmless seborrheic keratosis. Consult dermatologist if irritation occurs or for cosmetic removal.',
+        'Basal Cell Carcinoma': 'IMPORTANT: Consult dermatologist or oncologist for treatment. BCC is usually treatable with early detection.',
+        'Actinic Keratosis': 'Pre-cancerous condition requiring treatment. Consult dermatologist promptly to prevent progression to squamous cell carcinoma.',
+        'Vascular Lesion': 'Usually benign vascular abnormality. Consult dermatologist for evaluation and treatment options if cosmetically concerning.',
+        'Dermatofibroma': 'Benign fibrous growth. Usually no treatment needed unless causing discomfort or cosmetic concerns.'
     }
-    return recommendations.get(disease, 'Consult a healthcare professional for proper diagnosis and treatment.')
+    return recommendations.get(disease, 'Consult a dermatologist or oncologist for proper diagnosis and treatment of this skin condition.')
 
 def build_skin_classifier(base_model_name='resnet50', num_classes=7):
-    """Build skin disease classification model architecture"""
+    """Build skin cancer classification model architecture"""
     if base_model_name == 'resnet50':
         base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     elif base_model_name == 'efficientnet':

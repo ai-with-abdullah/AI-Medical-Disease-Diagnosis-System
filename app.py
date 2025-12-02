@@ -229,7 +229,7 @@ def main():
     st.sidebar.title("🔬 Navigation")
     page = st.sidebar.radio(
         "Select Module",
-        ["🏠 Home", "🫁 Pneumonia Detection", "🩺 Skin Disease Detection", 
+        ["🏠 Home", "🫁 Pneumonia Detection", "🩺 Skin Cancer Detection", 
          "❤️ Heart Disease Prediction", "👁️ Color Blindness Tests", 
          "📊 Multi-Modal Analysis", "📈 Model Performance", "⚙️ About"]
     )
@@ -238,8 +238,8 @@ def main():
         show_home()
     elif page == "🫁 Pneumonia Detection":
         show_pneumonia_detection()
-    elif page == "🩺 Skin Disease Detection":
-        show_skin_disease_detection()
+    elif page == "🩺 Skin Cancer Detection":
+        show_skin_cancer_detection()
     elif page == "❤️ Heart Disease Prediction":
         show_heart_disease_prediction()
     elif page == "👁️ Color Blindness Tests":
@@ -364,7 +364,7 @@ def show_home():
         with disease_row1_col2:
             st.markdown("""
             <div class="disease-module disease-module-skin">
-                <h3>🩺 Skin Disease Detection</h3>
+                <h3>🩺 Skin Cancer Detection</h3>
                 <ul style="list-style: none; padding-left: 0; line-height: 1.8;">
                     <li>✓ Live Camera Capture</li>
                     <li>✓ Melanoma Detection</li>
@@ -607,10 +607,10 @@ def show_pneumonia_detection():
         if st.button("🔗 Generate Combined Diagnosis"):
             st.info("Upload both X-ray image and audio file in the respective tabs, then click here for fusion analysis.")
 
-def show_skin_disease_detection():
+def show_skin_cancer_detection():
     st.markdown("""
     <div class="hero-banner" style="padding: 2rem;">
-        <h2>🩺 Skin Disease Detection</h2>
+        <h2>🩺 Skin Cancer Detection</h2>
         <p>AI-Powered Dermatological Analysis using Live Camera or Multiple Images</p>
     </div>
     """, unsafe_allow_html=True)
@@ -1144,7 +1144,7 @@ def show_multimodal_analysis():
     st.header("📊 Multi-Modal Disease Analysis")
     st.markdown("Upload **multiple inputs** (Image + Audio + Report) for advanced fusion-based diagnosis")
     
-    disease_category = st.selectbox("Select Disease Category", ["Pneumonia", "Skin Disease", "Heart Disease"])
+    disease_category = st.selectbox("Select Disease Category", ["Pneumonia", "Skin Cancer", "Heart Disease"])
     
     st.markdown("---")
     
@@ -1238,7 +1238,7 @@ def show_model_performance():
     st.header("📈 Model Performance & Training Metrics")
     
     disease_select = st.selectbox("Select Disease Model", 
-                                   ["Pneumonia (Image)", "Pneumonia (Audio)", "Skin Disease", 
+                                   ["Pneumonia (Image)", "Pneumonia (Audio)", "Skin Cancer", 
                                     "Heart Disease", "Color Blindness - Ishihara", 
                                     "Color Blindness - Ensemble"])
     
@@ -1335,7 +1335,7 @@ def show_about():
     across different modalities: images, audio, and text reports.
     
     ### 🎯 Key Features
-    - **4 Disease Categories**: Pneumonia, Skin Diseases, Heart Disease, Color Blindness
+    - **4 Disease Categories**: Pneumonia, Skin Cancer, Heart Disease, Color Blindness
     - **Multi-Modal Input**: Image, Audio, and Medical Report Analysis
     - **5 Color Blindness Tests**: Comprehensive eye examination suite
     - **Advanced AI Models**: ResNet50, EfficientNet, MobileNet, Random Forest

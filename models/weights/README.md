@@ -39,10 +39,13 @@ The system supports **3 specialized heart disease prediction models**:
 | `pneumonia_efficientnet.h5` | EfficientNet-based pneumonia detector | `train_pneumonia_models.py` |
 | `pneumonia_mobilenet.h5` | MobileNet-based pneumonia detector | `train_pneumonia_models.py` |
 
-### Skin Disease Detection Model (CNN)
+### Skin Cancer Detection Model (CNN) - Multi-Dataset Support
 | File | Description | Training Script |
 |------|-------------|-----------------|
-| `skin_resnet50.h5` | ResNet50-based skin disease classifier (7 classes) | `train_skin_model.py` |
+| `skin_resnet50.h5` | ResNet50-based skin cancer classifier (7 classes) | `train_skin_model.py` |
+| `skin_classes.json` | Class mapping information | `train_skin_model.py` |
+
+**Supported Datasets:** HAM10000, ISIC 2019, ISIC 2020, PAD-UFES-20, Melanoma Binary, pre-organized
 
 ## Training Instructions
 

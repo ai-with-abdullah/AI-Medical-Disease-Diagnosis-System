@@ -18,14 +18,17 @@ An **advanced medical diagnostic platform** combining Computer Vision, Deep Lear
      - Kaggle Pneumonia (5,863 images), NIH ChestX-ray14 (112,120 images)
      - Coswara (2,635 individuals), COUGHVID (25,000+ recordings)
 
-#### 2. **Skin Disease Detection**
+#### 2. **Skin Cancer Detection**
    - 🔍 **7-Class Classification**: Melanoma, Nevus, BCC, Keratosis, Actinic Keratosis, Vascular Lesion, Dermatofibroma
-   - 🏥 **Professional-Grade**: Uses HAM10000 and ISIC datasets
-   - 💊 **Treatment Recommendations**: Automatic suggestions based on detected disease
-   - 📊 **Datasets**: 5 datasets
+   - 🏥 **Professional-Grade**: Uses HAM10000, ISIC 2019, ISIC 2020, and PAD-UFES-20 datasets
+   - 💊 **Treatment Recommendations**: Automatic suggestions based on detected condition
+   - 📊 **Datasets**: 6 datasets (Multi-Dataset Support)
      - HAM10000 (10,015 images, 20-year collection)
-     - ISIC 2024 (400,000+ images from 7 institutions)
-     - DermNet NZ (~23,000 images)
+     - ISIC 2019 Challenge (25,331 images)
+     - ISIC 2020 Challenge (33,126 images)
+     - PAD-UFES-20 (2,298 smartphone images)
+     - Melanoma Binary Dataset (10,605 images)
+     - Skin Cancer MNIST (pre-processed)
 
 #### 3. **Heart Disease Prediction** (3 Disease Types!)
    - 📈 **Random Forest Classifier**: 100 decision trees for clinical parameter analysis
@@ -116,7 +119,7 @@ else:
 | 2 | Pneumonia EfficientNet | CNN | EfficientNetB0 | Efficient pneumonia detection | 224x224 RGB | Binary |
 | 3 | Pneumonia MobileNet | CNN | MobileNetV2 | Fast pneumonia detection | 224x224 RGB | Binary |
 | 4 | Audio Pneumonia CNN | 1D CNN | Custom MFCC | Cough/breathing analysis | 40 MFCC | Binary |
-| 5 | Skin Disease ResNet50 | CNN | ResNet50 + custom | 7-class skin classification | 224x224 RGB | 7 classes |
+| 5 | Skin Cancer ResNet50 | CNN | ResNet50 + custom | 7-class skin cancer classification | 224x224 RGB | 7 classes |
 | 6 | Heart Disease RF (Generic) | ML Ensemble | 100 trees | CVD risk prediction | 9 features | Binary + Prob |
 | 6b | Heart Disease RF (CAD) | ML Ensemble | 100 trees | CAD risk prediction | 9 features | Binary + Prob |
 | 6c | Heart Disease RF (Arrhythmia) | ML Ensemble | 100 trees | Arrhythmia detection | 9 features | Binary + Prob |

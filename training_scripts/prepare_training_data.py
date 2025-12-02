@@ -4,7 +4,7 @@ Prepare Training Data Script
 This script prepares the training data for ALL disease models:
 - Heart Disease (3 models) - Supports 6 different datasets!
 - Pneumonia (3 models) 
-- Skin Disease (1 model)
+- Skin Cancer (1 model with multi-dataset support)
 
 Note: Color Blindness does NOT require training data - it uses interactive clinical tests.
 
@@ -470,12 +470,16 @@ def check_pneumonia_data(training_data_dir):
 
 
 def check_skin_data(training_data_dir):
-    """Check skin disease dataset structure"""
+    """Check skin cancer dataset structure"""
     print("\n" + "=" * 70)
-    print("CHECKING SKIN DISEASE DATA")
+    print("CHECKING SKIN CANCER DATA")
     print("=" * 70)
     
-    skin_dir = os.path.join(training_data_dir, 'skin_disease')
+    skin_dir = os.path.join(training_data_dir, 'skin_cancer')
+    skin_dir_old = os.path.join(training_data_dir, 'skin_disease')
+    if not os.path.exists(skin_dir) and os.path.exists(skin_dir_old):
+        skin_dir = skin_dir_old
+        print("   Note: Using legacy 'skin_disease' folder")
     
     metadata_path = os.path.join(skin_dir, 'HAM10000_metadata.csv')
     images_part1 = os.path.join(skin_dir, 'HAM10000_images_part_1')
@@ -509,9 +513,9 @@ def check_skin_data(training_data_dir):
             print(f"   [OK] Found {len(images):,} images in {part_name}")
     
     if success:
-        print(f"\nSkin disease dataset ready! Total: {total_images:,} images")
+        print(f"\nSkin cancer dataset ready! Total: {total_images:,} images")
     else:
-        print(f"\nSkin disease dataset incomplete.")
+        print(f"\nSkin cancer dataset incomplete.")
         print("Download from: https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000")
     
     return success
@@ -546,7 +550,7 @@ def prepare_data():
     
     print(f"\n{status_icons[results['heart']]} Heart Disease Data: {'Ready' if results['heart'] else 'Missing/Incomplete'}")
     print(f"{status_icons[results['pneumonia']]} Pneumonia Data: {'Ready' if results['pneumonia'] else 'Missing/Incomplete'}")
-    print(f"{status_icons[results['skin']]} Skin Disease Data: {'Ready' if results['skin'] else 'Missing/Incomplete'}")
+    print(f"{status_icons[results['skin']]} Skin Cancer Data: {'Ready' if results['skin'] else 'Missing/Incomplete'}")
     print(f"[i] Color Blindness: No training required (uses interactive tests)")
     
     print("\n" + "=" * 70)
@@ -564,9 +568,9 @@ def prepare_data():
         print("[X] Pneumonia: Download dataset first (see COMPREHENSIVE_TRAINING_GUIDE.md)")
     
     if results['skin']:
-        print("[OK] Skin Disease: Run 'python training_scripts/train_skin_model.py'")
+        print("[OK] Skin Cancer: Run 'python training_scripts/train_skin_model.py'")
     else:
-        print("[X] Skin Disease: Download dataset first (see COMPREHENSIVE_TRAINING_GUIDE.md)")
+        print("[X] Skin Cancer: Download dataset first (see COMPREHENSIVE_TRAINING_GUIDE.md)")
     
     return all(results.values())
 

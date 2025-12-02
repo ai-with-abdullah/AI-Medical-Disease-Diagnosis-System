@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is an advanced, AI-powered medical diagnostic platform designed for the detection of four distinct disease categories using 8 specialized deep learning models plus interactive clinical testing. It processes multi-modal data including X-rays, dermoscopy images, medical features, and real-time visual input. The system aims to provide medical-grade accuracy and professional reporting, making it suitable for clinical support and academic demonstration. Key capabilities include Pneumonia Detection (3 CNN models), Skin Disease Classification (1 CNN model), Heart Disease Prediction (3 Random Forest models), and comprehensive Color Blindness Testing with 5 interactive clinical tests (Ishihara, Farnsworth, Cambridge, Spectrum, Anomaloscope) - no AI training required for color blindness as it uses predefined medical standards. The project emphasizes production-readiness, robust UI/UX, and advanced AI techniques for a fully functional and impressive demo.
+This project is an advanced, AI-powered medical diagnostic platform designed for the detection of four distinct disease categories using 8 specialized deep learning models plus interactive clinical testing. It processes multi-modal data including X-rays, dermoscopy images, medical features, and real-time visual input. The system aims to provide medical-grade accuracy and professional reporting, making it suitable for clinical support and academic demonstration. Key capabilities include Pneumonia Detection (3 CNN models), Skin Cancer Classification (1 CNN model with multi-dataset support), Heart Disease Prediction (3 Random Forest models), and comprehensive Color Blindness Testing with 5 interactive clinical tests (Ishihara, Farnsworth, Cambridge, Spectrum, Anomaloscope) - no AI training required for color blindness as it uses predefined medical standards. The project emphasizes production-readiness, robust UI/UX, and advanced AI techniques for a fully functional and impressive demo.
 
 ## Project Structure (Cleaned)
 
@@ -52,7 +52,7 @@ The system is built around four independent disease detection modules, unified b
 **Technical Implementations & Feature Specifications:**
 
 -   **Pneumonia Detection (`models/pneumonia_model.py`):** Utilizes an ensemble of ResNet50, EfficientNet, and MobileNet for X-ray image classification (Normal/Pneumonia) with fusion prediction.
--   **Skin Disease Classification (`models/skin_model.py`):** Employs a ResNet50 model for 7-class classification on dermoscopy images (acne, BCC, BKL, dermatitis, melanoma, nevus, vascular).
+-   **Skin Cancer Classification (`models/skin_model.py`):** Employs a ResNet50 model for 7-class classification on dermoscopy images. Supports 6 datasets: HAM10000, ISIC 2019, ISIC 2020, PAD-UFES-20, Melanoma Binary, and pre-organized datasets. Classes: melanoma, nevus, BCC, BKL, actinic keratosis, vascular lesion, dermatofibroma.
 -   **Heart Disease Prediction (`models/heart_model.py`):** Features a Random Forest classifier predicting risk across three types: Generic Cardiovascular Disease, Coronary Artery Disease, and Cardiac Arrhythmia, based on 9 standardized medical features. Now supports 6 large datasets (total 645,000+ records): Cardiovascular Disease (70K), Personal Key Indicators (320K), Health Indicators (254K), Comprehensive (1.1K), Heart Failure (918), UCI Original (303). Includes smart form reset functionality.
 -   **Color Blindness Testing (`models/colorblind_model.py`):** A comprehensive suite of 5 clinical tests (Ishihara, Farnsworth D-15, Cambridge, Spectrum Discrimination, Anomaloscope Simulation) using interactive testing methodology - **NO AI TRAINING REQUIRED**. Uses predefined correct answers based on medical standards, calculates "Eye Damage Ratio" from user responses, and provides detailed individual test results and overall diagnosis.
 -   **Multi-Modal Fusion Engine (`utils/fusion_engine.py`):** Combines outputs from different modalities (image, audio, text) using four strategies: Weighted Average, Voting, Bayesian, and Stacking for cross-disease analysis.
@@ -96,7 +96,7 @@ The system is built around four independent disease detection modules, unified b
 
 **Project Cleanup:**
 - Removed unnecessary files: attached_assets/, stub main.py, duplicate root files, zip archive
-- Fixed potential "image is possibly unbound" issue in skin disease detection module
+- Fixed potential "image is possibly unbound" issue in skin cancer detection module
 - Verified all dependencies are present in requirements.txt including reportlab for PDF generation
 
 ## Recent Updates (Nov 25, 2025)

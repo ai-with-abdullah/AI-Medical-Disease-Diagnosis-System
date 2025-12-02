@@ -8,7 +8,7 @@ This folder contains training datasets for ALL trainable disease models.
 |---------|------------------|------|---------------|
 | Heart Disease | UCI Heart + Arrhythmia | ~150 KB | 2-3 minutes |
 | Pneumonia | Kaggle Chest X-Ray | ~2 GB | 30-60 minutes |
-| Skin Disease | HAM10000 | ~2.7 GB | 20-40 minutes |
+| Skin Cancer | 6 Datasets (HAM10000, ISIC, etc.) | ~30 GB | 20-60 minutes |
 | Color Blindness | NONE | N/A | No training needed |
 
 ## Complete Folder Structure
@@ -33,10 +33,16 @@ training_data/
 │       ├── NORMAL/
 │       └── PNEUMONIA/
 │
-└── skin_disease/
-    ├── HAM10000_images_part_1/      (Skin lesion images)
-    ├── HAM10000_images_part_2/      (More images)
-    └── HAM10000_metadata.csv        (Labels file - IMPORTANT!)
+└── skin_cancer/
+    ├── ham10000/                    (HAM10000 dataset)
+    │   ├── HAM10000_images_part_1/
+    │   ├── HAM10000_images_part_2/
+    │   └── HAM10000_metadata.csv
+    ├── isic2019/                    (ISIC 2019 Challenge)
+    ├── isic2020/                    (ISIC 2020 Challenge)
+    ├── pad_ufes_20/                 (PAD-UFES-20 smartphone images)
+    ├── melanoma_binary/             (Binary classification dataset)
+    └── organized/                   (Auto-generated combined dataset)
 ```
 
 ## Dataset Download Links
@@ -61,13 +67,29 @@ training_data/
 - Requires: Free Kaggle account
 - Place in: `training_data/pneumonia/`
 
-### 3. Skin Disease (Largest)
+### 3. Skin Cancer (Multi-Dataset Support)
 
-**HAM10000 Dataset**
+**Dataset 1: HAM10000 (Recommended Start)**
 - Link: https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000
-- Size: 2.7 GB
-- Requires: Free Kaggle account
-- Place in: `training_data/skin_disease/`
+- Size: 2.7 GB (10,015 images)
+- Place in: `training_data/skin_cancer/ham10000/`
+
+**Dataset 2: ISIC 2019 (High Accuracy)**
+- Link: https://www.kaggle.com/datasets/andrewmvd/isic-2019
+- Size: 9 GB (25,331 images)
+- Place in: `training_data/skin_cancer/isic2019/`
+
+**Dataset 3: ISIC 2020 (Melanoma Focus)**
+- Link: https://www.kaggle.com/competitions/siim-isic-melanoma-classification
+- Size: 15 GB (33,126 images)
+- Place in: `training_data/skin_cancer/isic2020/`
+
+**Dataset 4: PAD-UFES-20 (Smartphone Images)**
+- Link: https://www.kaggle.com/datasets/mahdavi1202/skin-cancer
+- Size: 500 MB (2,298 images)
+- Place in: `training_data/skin_cancer/pad_ufes_20/`
+
+**Note:** Download any combination - the training script auto-detects and combines all available datasets!
 
 ## Training Commands
 
@@ -81,7 +103,7 @@ python training_scripts/train_heart_models.py
 # 2. Pneumonia (30-60 minutes)
 python training_scripts/train_pneumonia_models.py
 
-# 3. Skin Disease (20-40 minutes)
+# 3. Skin Cancer (20-60 minutes)
 python training_scripts/train_skin_model.py
 ```
 
@@ -91,7 +113,7 @@ See individual README files in each subfolder:
 - `heart_disease/README.md`
 - `arrhythmia/README.md`
 - `pneumonia/README.md`
-- `skin_disease/README.md`
+- `skin_cancer/README.md`
 
 Or see: `COMPREHENSIVE_TRAINING_GUIDE.md` (main project folder)
 

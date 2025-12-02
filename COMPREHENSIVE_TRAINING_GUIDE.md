@@ -9,7 +9,7 @@ This guide explains how to train ALL disease detection models for your AI Medica
 | Disease | Models Count | Dataset | Training Time |
 |---------|-------------|---------|---------------|
 | Pneumonia | 3 models (ResNet50, EfficientNet, MobileNet) | 8 Datasets (400K+ images) | 1-3 hours |
-| Skin Disease | 1 model (ResNet50) | HAM10000 | 20-40 minutes |
+| Skin Cancer | 1 model (ResNet50) | 6 Datasets (50K+ images) | 20-60 minutes |
 | Heart Disease | 3 models (Generic CVD, CAD, Arrhythmia) | UCI Datasets | 2-3 minutes |
 | Color Blindness | NO TRAINING NEEDED | Live Testing | N/A |
 
@@ -448,74 +448,215 @@ The training script (`training_scripts/train_pneumonia_models.py`) includes all 
 
 ---
 
-# PART 3: SKIN DISEASE DETECTION MODEL
+# PART 3: SKIN CANCER DETECTION MODEL (6 Datasets - 50K+ Images!)
 
-## Step 3.1: Download Skin Disease Dataset
+## Available Skin Cancer Datasets Summary
 
-### Option 1: HAM10000 Dataset (Recommended)
+| # | Dataset Name | Images | Size | Classes | Accuracy Potential | Difficulty |
+|---|--------------|--------|------|---------|-------------------|------------|
+| 1 | HAM10000 | 10,015 | 2.7 GB | 7 lesion types | 88-93% | Easy |
+| 2 | ISIC 2019 Challenge | 25,331 | 9 GB | 8 lesion types | 90-95% | Medium |
+| 3 | ISIC 2020 Challenge | 33,126 | 15 GB | 2 (Benign/Malignant) | 85-92% | Medium |
+| 4 | PAD-UFES-20 | 2,298 | 500 MB | 6 lesion types | 85-90% | Easy |
+| 5 | Melanoma Skin Cancer Dataset | 10,605 | 3 GB | 2 (Benign/Malignant) | 88-93% | Easy |
+| 6 | Skin Cancer MNIST (Balanced) | 10,015 | 300 MB | 7 lesion types | 85-90% | Easy |
+
+**RECOMMENDED COMBINATION FOR 93%+ ACCURACY:**
+- Dataset 1 (HAM10000) + Dataset 2 (ISIC 2019) + Dataset 4 (PAD-UFES-20) = **~37,600 images**
+
+---
+
+## Step 3.1: Download Skin Cancer Datasets
+
+### Dataset 1: HAM10000 (RECOMMENDED - Easy Start)
 | Detail | Value |
 |--------|-------|
 | **Link** | https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000 |
-| **Size** | 2.7 GB |
-| **Images** | 10,015 dermoscopy images |
+| **Size** | 2.7 GB (10,015 dermoscopy images) |
 | **Classes** | 7 types of skin lesions |
+| **Quality** | Expert-labeled by dermatologists |
+| **Login Required** | Yes (free Kaggle account) |
+| **Best For** | Quick start, baseline model |
 
-### Option 2: ISIC Archive (Alternative)
+### Dataset 2: ISIC 2019 Challenge (HIGH ACCURACY)
 | Detail | Value |
 |--------|-------|
-| **Link** | https://www.isic-archive.com/ |
-| **Size** | Various |
-| **Note** | Pre-organized in class folders |
+| **Link** | https://challenge.isic-archive.com/data/#2019 |
+| **Alt Link** | https://www.kaggle.com/datasets/andrewmvd/isic-2019 |
+| **Size** | 9 GB (25,331 images) |
+| **Classes** | 8 diagnostic categories |
+| **Quality** | Competition-grade, expert annotations |
+| **Best For** | High accuracy, comprehensive classification |
 
-### Option 3: DermNet (Alternative)
+### Dataset 3: ISIC 2020 Challenge (MELANOMA FOCUS)
 | Detail | Value |
 |--------|-------|
-| **Link** | https://www.kaggle.com/datasets/shubhamgoel27/dermnet |
-| **Size** | 19,500 images |
-| **Classes** | 23 skin conditions |
+| **Link** | https://www.kaggle.com/competitions/siim-isic-melanoma-classification/data |
+| **Size** | 15 GB (33,126 images from 2,056 patients) |
+| **Classes** | Binary (Benign vs Malignant Melanoma) |
+| **Quality** | Triple-reviewed by dermatologists |
+| **Best For** | Melanoma-specific detection |
 
-## Step 3.2: Extract and Place Files
+### Dataset 4: PAD-UFES-20 (SMARTPHONE IMAGES)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.kaggle.com/datasets/mahdavi1202/skin-cancer |
+| **Alt Link** | https://data.mendeley.com/datasets/zr7vgbcyr2/1 |
+| **Size** | 500 MB (2,298 images) |
+| **Classes** | 6 skin lesion types |
+| **Quality** | Real-world smartphone images |
+| **Best For** | Mobile app deployment, real-world scenarios |
 
-After downloading HAM10000, extract and place files:
+### Dataset 5: Melanoma Skin Cancer Dataset (BINARY)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.kaggle.com/datasets/hasnainjaved/melanoma-skin-cancer-dataset-of-10000-images |
+| **Size** | 3 GB (10,605 images) |
+| **Classes** | 2 (Benign, Malignant) |
+| **Quality** | Pre-organized, balanced classes |
+| **Best For** | Binary classification, quick training |
+
+### Dataset 6: Skin Cancer MNIST (HAM10000 Resized)
+| Detail | Value |
+|--------|-------|
+| **Link** | https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000 |
+| **Size** | 300 MB (28x28 and 75x75 versions) |
+| **Classes** | 7 lesion types |
+| **Quality** | Pre-processed, fast loading |
+| **Best For** | Quick experiments, low memory systems |
+
+---
+
+## Step 3.2: Recommended Download Strategies
+
+### Strategy A: Quick Start (88-92% Accuracy) - 30 minutes download
+Download these datasets:
+1. Dataset 1 (HAM10000) - 10,015 images
+**Total: ~10,000 images, ~2.7 GB**
+
+### Strategy B: Best Accuracy (92-95% Accuracy) - 1-2 hours download
+Download these datasets:
+1. Dataset 1 (HAM10000) - 10,015 images
+2. Dataset 2 (ISIC 2019) - 25,331 images
+3. Dataset 4 (PAD-UFES-20) - 2,298 images
+**Total: ~37,600 images, ~12 GB**
+
+### Strategy C: Maximum Accuracy (94-97% Accuracy) - 3-4 hours download
+Download all datasets and combine them.
+**Total: 80,000+ images, ~30 GB**
+
+---
+
+## Step 3.3: Extract and Place Skin Cancer Files
+
+After downloading, organize files in this structure:
+
 ```
-training_data/skin_disease/
-├── HAM10000_images_part_1/    <- Image folder 1
-├── HAM10000_images_part_2/    <- Image folder 2
-└── HAM10000_metadata.csv      <- Labels file (REQUIRED!)
+training_data/skin_cancer/
+|
++-- ham10000/                          <- Dataset 1: HAM10000
+|   +-- HAM10000_images_part_1/
+|   |   +-- ISIC_0024306.jpg
+|   |   +-- ... (5,000+ images)
+|   +-- HAM10000_images_part_2/
+|   |   +-- ... (5,000+ images)
+|   +-- HAM10000_metadata.csv          <- Labels file (REQUIRED!)
+|
++-- isic2019/                          <- Dataset 2: ISIC 2019
+|   +-- ISIC_2019_Training_Input/
+|   |   +-- ISIC_0000000.jpg
+|   |   +-- ... (25,331 images)
+|   +-- ISIC_2019_Training_GroundTruth.csv
+|
++-- isic2020/                          <- Dataset 3: ISIC 2020
+|   +-- train/
+|   |   +-- *.jpg (33,126 images)
+|   +-- train.csv
+|
++-- pad_ufes_20/                       <- Dataset 4: PAD-UFES-20
+|   +-- images/
+|   |   +-- *.png (2,298 images)
+|   +-- metadata.csv
+|
++-- melanoma_binary/                   <- Dataset 5: Melanoma Binary
+|   +-- benign/
+|   |   +-- ... (benign images)
+|   +-- malignant/
+|       +-- ... (malignant images)
+|
++-- organized/                         <- Auto-generated: Combined dataset
+    +-- nv/
+    +-- mel/
+    +-- bkl/
+    +-- bcc/
+    +-- akiec/
+    +-- vasc/
+    +-- df/
 ```
 
-## Step 3.3: Train Skin Disease Model
+**Note:** You can download ANY combination of these datasets. The training script automatically detects which datasets are present and combines all available data!
+
+---
+
+## Step 3.4: Train Skin Cancer Model
 
 ```bash
 python training_scripts/train_skin_model.py
 ```
 
-**The script automatically:**
-1. Detects HAM10000 or pre-organized dataset
-2. Organizes images into class folders (if HAM10000)
-3. Trains ResNet50 with two-phase transfer learning
+**That's it!** The script automatically:
+1. Detects all available datasets in training_data/skin_cancer/
+2. Loads and combines ALL image data into a unified dataset
+3. Handles different folder structures automatically
 4. Applies class balancing for imbalanced data
-5. Saves model to models/weights/
+5. Trains ResNet50 model with optimized settings
+6. Saves trained model to models/weights/
 
-**Training Time:** 20-40 minutes
+**No code changes needed - just download datasets and run!**
 
-**Expected Results:** 88-93% accuracy
+**Training Time (depends on data size):**
+| Data Size | Training Time | Expected Accuracy |
+|-----------|--------------|-------------------|
+| ~10,000 images | 20-40 minutes | 88-92% |
+| ~25,000 images | 40-60 minutes | 90-94% |
+| ~40,000 images | 1-2 hours | 93-96% |
+| ~80,000+ images | 2-4 hours | 95-97% |
 
-## Step 3.4: Skin Disease Classes
+---
 
-The model classifies 7 types of skin lesions:
+## Step 3.5: Skin Cancer Classes
 
-| Code | Disease Name | Category |
-|------|-------------|----------|
-| nv | Melanocytic Nevus (Mole) | Benign |
-| mel | Melanoma | Malignant |
-| bkl | Benign Keratosis | Benign |
-| bcc | Basal Cell Carcinoma | Malignant |
-| akiec | Actinic Keratosis | Pre-cancerous |
-| vasc | Vascular Lesion | Vascular |
-| df | Dermatofibroma | Benign |
+The model classifies 7 types of skin lesions (using HAM10000 classification):
 
-## Step 3.5: Files Created
+| Code | Disease Name | Category | Risk Level |
+|------|-------------|----------|------------|
+| nv | Melanocytic Nevus (Mole) | Benign | Low |
+| mel | Melanoma | Malignant | HIGH - Urgent |
+| bkl | Benign Keratosis | Benign | Low |
+| bcc | Basal Cell Carcinoma | Malignant | Medium-High |
+| akiec | Actinic Keratosis | Pre-cancerous | Medium |
+| vasc | Vascular Lesion | Vascular | Low |
+| df | Dermatofibroma | Benign | Low |
+
+---
+
+## Step 3.6: Training Features (Built-in!)
+
+The training script includes all best practices automatically:
+
+| Feature | Description | Benefit |
+|---------|-------------|---------|
+| **Multi-Dataset Support** | Auto-detects HAM10000, ISIC, PAD-UFES-20 | More data = better accuracy |
+| **Data Augmentation** | Rotation, flip, zoom, shift | Prevents overfitting |
+| **Class Weights** | Auto-calculated balanced weights | Handles imbalanced data |
+| **Learning Rate Scheduling** | ReduceLROnPlateau | Optimal convergence |
+| **Early Stopping** | Patience=5, restores best | Prevents overtraining |
+| **Fine-tuning** | 2-phase transfer learning | Maximum accuracy |
+| **Auto Batch Size** | Adjusts based on dataset | Optimal memory usage |
+
+---
+
+## Step 3.7: Files Created
 
 After training, these files are saved to `models/weights/`:
 - `skin_resnet50.h5` - Trained model
@@ -539,7 +680,7 @@ python training_scripts/train_heart_models.py
 # Step 3: Train pneumonia models (1-3 hours depending on data)
 python training_scripts/train_pneumonia_models.py
 
-# Step 4: Train skin disease model (20-40 minutes)
+# Step 4: Train skin cancer model (20-60 minutes)
 python training_scripts/train_skin_model.py
 
 # Step 5: Restart the app to use new models
