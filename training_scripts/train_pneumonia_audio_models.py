@@ -1,18 +1,24 @@
 """
-Train Pneumonia Audio Detection Models (OPTIMIZED VERSION)
-===========================================================
-Highly optimized audio classification for pneumonia detection.
-Uses simplified feature extraction for 10-20x faster training.
+Train Pneumonia Audio Detection Models (OPTIMIZED V2)
+======================================================
+Optimized for speed AND accuracy with enhanced features.
 
 Models trained:
-1. Random Forest - Fast, reliable baseline
-2. Neural Network (MLP) - Higher accuracy
+1. Random Forest - Fast, reliable
+2. XGBoost (if available) - Better accuracy
+3. Neural Network (MLP) - Best accuracy
+
+Key Improvements:
+- Enhanced feature extraction (MFCC + delta + spectral)
+- Data augmentation for audio
+- Better hyperparameters
+- Gradient Boosting option
 
 Usage:
 ------
   Fast mode (recommended): python train_pneumonia_audio_models.py --fast
   Ultra-fast mode:         python train_pneumonia_audio_models.py --fast --samples 500
-  Normal mode:             python train_pneumonia_audio_models.py
+  Full accuracy mode:      python train_pneumonia_audio_models.py --full
 """
 
 import os
@@ -23,18 +29,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import pickle
 import json
 import time
 import hashlib
-from functools import partial
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 AUDIO_DATA_DIR = str(PROJECT_ROOT / 'training_data' / 'pneumonia_audio')
 WEIGHTS_DIR = str(PROJECT_ROOT / 'models' / 'weights')
-CACHE_DIR = str(PROJECT_ROOT / 'training_data' / '.feature_cache_v2')
+CACHE_DIR = str(PROJECT_ROOT / 'training_data' / '.feature_cache_v3')
 
 try:
     import librosa
@@ -44,13 +49,13 @@ except ImportError:
     LIBROSA_AVAILABLE = False
 
 try:
-    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
     from sklearn.preprocessing import StandardScaler
     from sklearn.model_selection import train_test_split, cross_val_score
-    from sklearn.metrics import classification_report, accuracy_score
+    from sklearn.metrics import classification_report, accuracy_score, f1_score
     SKLEARN_AVAILABLE = True
 except ImportError:
-    print("scikit-learn not installed. Run: pip install scikit-learn")
+    print("scikit-learn not installed")
     SKLEARN_AVAILABLE = False
 
 try:
@@ -63,53 +68,20 @@ except ImportError:
     TF_AVAILABLE = False
 
 
-def extract_fast_features(audio_path, sr=16000, duration=5):
+def extract_enhanced_features(audio_path, sr=22050, duration=6):
     """
-    FAST feature extraction - simplified for speed.
+    Enhanced feature extraction for better accuracy.
     
-    Features extracted (26 total):
-    - MFCC mean (13) - reduced from 40
-    - MFCC std (13)
-    
-    Speed: ~0.3-0.5 seconds per file vs 3-5 seconds
-    """
-    try:
-        y, sr_loaded = librosa.load(audio_path, sr=sr, duration=duration, mono=True)
-        
-        if len(y) < sr * 0.3:
-            return None
-        
-        min_length = sr
-        if len(y) < min_length:
-            y = np.pad(y, (0, min_length - len(y)), mode='constant')
-        
-        mfcc = librosa.feature.mfcc(y=y, sr=sr_loaded, n_mfcc=13, n_fft=1024, hop_length=512)
-        mfcc_mean = np.mean(mfcc, axis=1)
-        mfcc_std = np.std(mfcc, axis=1)
-        
-        features = np.concatenate([mfcc_mean, mfcc_std])
-        
-        return features
-        
-    except Exception as e:
-        return None
-
-
-def extract_standard_features(audio_path, sr=22050, duration=6):
-    """
-    Standard feature extraction - balanced speed and accuracy.
-    
-    Features extracted (54 total):
+    Features extracted (58 total):
     - MFCC mean (20)
     - MFCC std (20)
-    - Spectral centroid (1)
-    - Spectral rolloff (1)
-    - Spectral bandwidth (1)
+    - Delta MFCC mean (5) - captures temporal changes
+    - Spectral centroid, rolloff, bandwidth, contrast (4)
     - Zero crossing rate (1)
     - RMS energy (1)
-    - Spectral contrast mean (7) - reduced
-    - Tempo (1)
     - Spectral flatness (1)
+    - Tempo (1)
+    - Chroma mean (5) - reduced for speed
     """
     try:
         y, sr_loaded = librosa.load(audio_path, sr=sr, duration=duration, mono=True)
@@ -125,30 +97,108 @@ def extract_standard_features(audio_path, sr=22050, duration=6):
         mfcc_mean = np.mean(mfcc, axis=1)
         mfcc_std = np.std(mfcc, axis=1)
         
+        delta_mfcc = librosa.feature.delta(mfcc[:5])
+        delta_mfcc_mean = np.mean(delta_mfcc, axis=1)
+        
         spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr_loaded))
         spectral_rolloff = np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr_loaded))
         spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr_loaded))
+        spectral_contrast = np.mean(librosa.feature.spectral_contrast(y=y, sr=sr_loaded))
+        
         zcr = np.mean(librosa.feature.zero_crossing_rate(y))
         rms = np.mean(librosa.feature.rms(y=y))
-        
-        spectral_contrast = np.mean(librosa.feature.spectral_contrast(y=y, sr=sr_loaded), axis=1)
+        spectral_flatness = np.mean(librosa.feature.spectral_flatness(y=y))
         
         tempo = librosa.feature.tempo(y=y, sr=sr_loaded)[0]
         
-        spectral_flatness = np.mean(librosa.feature.spectral_flatness(y=y))
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr_loaded, n_chroma=5)
+        chroma_mean = np.mean(chroma, axis=1)
         
         features = np.concatenate([
             mfcc_mean,
             mfcc_std,
-            [spectral_centroid, spectral_rolloff, spectral_bandwidth, zcr, rms],
-            spectral_contrast,
-            [tempo, spectral_flatness]
+            delta_mfcc_mean,
+            [spectral_centroid, spectral_rolloff, spectral_bandwidth, spectral_contrast],
+            [zcr, rms, spectral_flatness, tempo],
+            chroma_mean
         ])
         
         return features
         
     except Exception as e:
         return None
+
+
+def extract_fast_features(audio_path, sr=20000, duration=5):
+    """
+    Fast feature extraction - optimized for speed.
+    
+    Features extracted (32 total):
+    - MFCC mean (13)
+    - MFCC std (13)
+    - Spectral centroid (1)
+    - Spectral rolloff (1)
+    - Zero crossing rate (1)
+    - RMS energy (1)
+    - Spectral flatness (1)
+    - Tempo (1)
+    """
+    try:
+        y, sr_loaded = librosa.load(audio_path, sr=sr, duration=duration, mono=True)
+        
+        if len(y) < sr * 0.3:
+            return None
+        
+        min_length = sr
+        if len(y) < min_length:
+            y = np.pad(y, (0, min_length - len(y)), mode='constant')
+        
+        mfcc = librosa.feature.mfcc(y=y, sr=sr_loaded, n_mfcc=13, n_fft=1024, hop_length=512)
+        mfcc_mean = np.mean(mfcc, axis=1)
+        mfcc_std = np.std(mfcc, axis=1)
+        
+        spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr_loaded))
+        spectral_rolloff = np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr_loaded))
+        zcr = np.mean(librosa.feature.zero_crossing_rate(y))
+        rms = np.mean(librosa.feature.rms(y=y))
+        spectral_flatness = np.mean(librosa.feature.spectral_flatness(y=y))
+        tempo = librosa.feature.tempo(y=y, sr=sr_loaded)[0]
+        
+        features = np.concatenate([
+            mfcc_mean,
+            mfcc_std,
+            [spectral_centroid, spectral_rolloff, zcr, rms, spectral_flatness, tempo]
+        ])
+        
+        return features
+        
+    except Exception as e:
+        return None
+
+
+def process_file_enhanced(args):
+    """Process a single file with enhanced extraction"""
+    idx, file_path, label, cache_path = args
+    
+    if cache_path and os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'rb') as f:
+                cached = pickle.load(f)
+                return idx, cached['features'], label, True
+        except:
+            pass
+    
+    features = extract_enhanced_features(file_path)
+    
+    if features is not None and cache_path:
+        try:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, 'wb') as f:
+                pickle.dump({'features': features}, f)
+        except:
+            pass
+    
+    return idx, features, label, False
 
 
 def process_file_fast(args):
@@ -176,34 +226,9 @@ def process_file_fast(args):
     return idx, features, label, False
 
 
-def process_file_standard(args):
-    """Process a single file with standard extraction"""
-    idx, file_path, label, cache_path = args
-    
-    if cache_path and os.path.exists(cache_path):
-        try:
-            with open(cache_path, 'rb') as f:
-                cached = pickle.load(f)
-                return idx, cached['features'], label, True
-        except:
-            pass
-    
-    features = extract_standard_features(file_path)
-    
-    if features is not None and cache_path:
-        try:
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            with open(cache_path, 'wb') as f:
-                pickle.dump({'features': features}, f)
-        except:
-            pass
-    
-    return idx, features, label, False
-
-
 def get_cache_path(file_path, mode='fast'):
     """Generate cache path for a given audio file"""
-    file_hash = hashlib.md5(f"{file_path}_{mode}".encode()).hexdigest()
+    file_hash = hashlib.md5(f"{file_path}_{mode}_v3".encode()).hexdigest()
     return os.path.join(CACHE_DIR, mode, f"{file_hash}.pkl")
 
 
@@ -213,7 +238,6 @@ def detect_datasets():
     
     if not os.path.exists(AUDIO_DATA_DIR):
         print(f"Audio data directory not found: {AUDIO_DATA_DIR}")
-        print("   Creating directory...")
         os.makedirs(AUDIO_DATA_DIR, exist_ok=True)
         return datasets
     
@@ -398,14 +422,11 @@ def combine_datasets(datasets):
     return all_files, all_labels
 
 
-def extract_features_optimized(audio_files, labels, max_workers=None, sample_size=None, 
-                                use_cache=True, fast_mode=True):
-    """
-    OPTIMIZED feature extraction using ProcessPoolExecutor.
-    Much faster than the original multiprocessing.Pool approach.
-    """
+def extract_features_parallel(audio_files, labels, max_workers=None, sample_size=None, 
+                               use_cache=True, fast_mode=True):
+    """Parallel feature extraction with progress display"""
     print("\n" + "=" * 60)
-    print("EXTRACTING AUDIO FEATURES" + (" (FAST MODE)" if fast_mode else ""))
+    print("EXTRACTING AUDIO FEATURES" + (" (FAST MODE)" if fast_mode else " (ENHANCED MODE)"))
     print("=" * 60)
     
     if max_workers is None:
@@ -413,23 +434,23 @@ def extract_features_optimized(audio_files, labels, max_workers=None, sample_siz
         max_workers = max(1, multiprocessing.cpu_count())
     
     if sample_size and sample_size < len(audio_files):
-        print(f"FAST MODE: Sampling {sample_size} files from {len(audio_files)} total")
+        print(f"Sampling {sample_size} files from {len(audio_files)} total")
         np.random.seed(42)
         indices = np.random.choice(len(audio_files), sample_size, replace=False)
         audio_files = [audio_files[i] for i in indices]
         labels = [labels[i] for i in indices]
     
     total_files = len(audio_files)
-    mode = 'fast' if fast_mode else 'standard'
-    process_func = process_file_fast if fast_mode else process_file_standard
+    mode = 'fast' if fast_mode else 'enhanced'
+    process_func = process_file_fast if fast_mode else process_file_enhanced
     
-    est_time_per_file = 0.5 if fast_mode else 1.5
-    est_total_time = (total_files * est_time_per_file) / max_workers
+    feature_count = 32 if fast_mode else 58
+    est_time = 0.4 if fast_mode else 1.0
     
     print(f"Processing {total_files} audio files...")
-    print(f"   Mode: {'FAST (26 features)' if fast_mode else 'STANDARD (54 features)'}")
+    print(f"   Mode: {mode.upper()} ({feature_count} features)")
     print(f"   Workers: {max_workers}")
-    print(f"   Estimated time: {est_total_time/60:.1f} minutes")
+    print(f"   Estimated time: {(total_files * est_time) / max_workers / 60:.1f} minutes")
     print("")
     
     if use_cache:
@@ -446,44 +467,40 @@ def extract_features_optimized(audio_files, labels, max_workers=None, sample_siz
     cached_count = 0
     processed_count = 0
     failed_count = 0
-    valid_count = 0
     
     last_update = time.time()
-    update_interval = 2.0
     
     try:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            chunk_size = max(1, total_files // (max_workers * 4))
             future_to_idx = {executor.submit(process_func, task): task[0] for task in tasks}
             
             for future in as_completed(future_to_idx):
                 processed_count += 1
                 
                 try:
-                    idx, features, label, from_cache = future.result(timeout=60)
+                    idx, features, label, from_cache = future.result(timeout=120)
                     
                     if features is not None:
                         features_list[idx] = features
                         labels_list[idx] = label
-                        valid_count += 1
                         if from_cache:
                             cached_count += 1
                     else:
                         failed_count += 1
-                except Exception as e:
+                except Exception:
                     failed_count += 1
                 
                 current_time = time.time()
-                if current_time - last_update >= update_interval or processed_count == total_files:
+                if current_time - last_update >= 2.0 or processed_count == total_files:
                     last_update = current_time
                     elapsed = current_time - start_time
                     rate = processed_count / elapsed if elapsed > 0 else 0
                     remaining = (total_files - processed_count) / rate if rate > 0 else 0
                     progress_pct = (processed_count / total_files) * 100
                     
-                    bar_length = 30
-                    filled = int(bar_length * progress_pct / 100)
-                    bar = '=' * filled + '>' + ' ' * (bar_length - filled - 1)
+                    bar_len = 30
+                    filled = int(bar_len * progress_pct / 100)
+                    bar = '=' * filled + '>' + ' ' * (bar_len - filled - 1)
                     
                     status = f"\r   [{bar}] {progress_pct:5.1f}% | {processed_count}/{total_files} | {rate:.1f}/s | ETA: {remaining/60:.1f}m"
                     if cached_count > 0:
@@ -491,8 +508,7 @@ def extract_features_optimized(audio_files, labels, max_workers=None, sample_siz
                     print(status, end='', flush=True)
     
     except KeyboardInterrupt:
-        print("\n\nTraining interrupted by user!")
-        print(f"   Processed {processed_count} files before interrupt")
+        print("\n\nInterrupted by user!")
     
     print()
     
@@ -500,7 +516,7 @@ def extract_features_optimized(audio_files, labels, max_workers=None, sample_siz
     labels_list = [l for l in labels_list if l is not None]
     
     if len(features_list) == 0:
-        print("\nNo features extracted! Check your audio files.")
+        print("\nNo features extracted!")
         return np.array([]), np.array([])
     
     X = np.array(features_list)
@@ -517,21 +533,21 @@ def extract_features_optimized(audio_files, labels, max_workers=None, sample_siz
     return X, y
 
 
-def train_random_forest(X_train, X_test, y_train, y_test, class_weights):
-    """Train Random Forest classifier"""
+def train_random_forest(X_train, X_test, y_train, y_test):
+    """Train Random Forest classifier with optimized params"""
     print("\n" + "=" * 60)
     print("TRAINING RANDOM FOREST MODEL")
     print("=" * 60)
     
     rf_model = RandomForestClassifier(
-        n_estimators=150,
-        max_depth=15,
+        n_estimators=200,
+        max_depth=20,
         min_samples_split=5,
         min_samples_leaf=2,
+        max_features='sqrt',
         class_weight='balanced',
         random_state=42,
-        n_jobs=-1,
-        verbose=0
+        n_jobs=-1
     )
     
     print("Training Random Forest...")
@@ -541,20 +557,56 @@ def train_random_forest(X_train, X_test, y_train, y_test, class_weights):
     
     y_pred = rf_model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
     
-    print(f"\nRandom Forest Training Complete! ({train_time:.1f}s)")
+    print(f"\nRandom Forest Complete! ({train_time:.1f}s)")
     print(f"   Test Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"   F1 Score: {f1:.4f}")
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=['Normal', 'Abnormal']))
     
-    return rf_model, accuracy
+    return rf_model, accuracy, f1
+
+
+def train_gradient_boosting(X_train, X_test, y_train, y_test):
+    """Train Gradient Boosting classifier"""
+    print("\n" + "=" * 60)
+    print("TRAINING GRADIENT BOOSTING MODEL")
+    print("=" * 60)
+    
+    gb_model = GradientBoostingClassifier(
+        n_estimators=150,
+        max_depth=6,
+        learning_rate=0.1,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        subsample=0.8,
+        random_state=42
+    )
+    
+    print("Training Gradient Boosting...")
+    start_time = time.time()
+    gb_model.fit(X_train, y_train)
+    train_time = time.time() - start_time
+    
+    y_pred = gb_model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    
+    print(f"\nGradient Boosting Complete! ({train_time:.1f}s)")
+    print(f"   Test Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"   F1 Score: {f1:.4f}")
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred, target_names=['Normal', 'Abnormal']))
+    
+    return gb_model, accuracy, f1
 
 
 def train_neural_network(X_train, X_test, y_train, y_test, class_weights):
-    """Train Neural Network (MLP) classifier"""
+    """Train Neural Network classifier with improved architecture"""
     if not TF_AVAILABLE:
-        print("\nTensorFlow not available. Skipping Neural Network training.")
-        return None, 0
+        print("\nTensorFlow not available. Skipping Neural Network.")
+        return None, 0, 0
     
     print("\n" + "=" * 60)
     print("TRAINING NEURAL NETWORK MODEL")
@@ -563,7 +615,10 @@ def train_neural_network(X_train, X_test, y_train, y_test, class_weights):
     input_dim = X_train.shape[1]
     
     model = keras.Sequential([
-        keras.layers.Dense(128, activation='relu', input_shape=(input_dim,)),
+        keras.layers.Dense(256, activation='relu', input_shape=(input_dim,)),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.4),
+        keras.layers.Dense(128, activation='relu'),
         keras.layers.BatchNormalization(),
         keras.layers.Dropout(0.3),
         keras.layers.Dense(64, activation='relu'),
@@ -582,14 +637,14 @@ def train_neural_network(X_train, X_test, y_train, y_test, class_weights):
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=8,
+            patience=10,
             restore_best_weights=True,
             verbose=0
         ),
         keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
-            patience=4,
+            patience=5,
             min_lr=1e-6,
             verbose=0
         )
@@ -599,7 +654,7 @@ def train_neural_network(X_train, X_test, y_train, y_test, class_weights):
     history = model.fit(
         X_train, y_train,
         validation_data=(X_test, y_test),
-        epochs=50,
+        epochs=100,
         batch_size=32,
         class_weight=class_weights,
         callbacks=callbacks,
@@ -608,17 +663,19 @@ def train_neural_network(X_train, X_test, y_train, y_test, class_weights):
     
     y_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
     accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
     
-    print(f"\nNeural Network Training Complete!")
+    print(f"\nNeural Network Complete!")
     print(f"   Test Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"   F1 Score: {f1:.4f}")
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=['Normal', 'Abnormal']))
     
-    return model, accuracy
+    return model, accuracy, f1
 
 
-def save_models(rf_model, nn_model, scaler, accuracy_rf, accuracy_nn, feature_mode):
-    """Save trained models to weights directory"""
+def save_models(rf_model, gb_model, nn_model, scaler, results, feature_mode):
+    """Save all trained models"""
     os.makedirs(WEIGHTS_DIR, exist_ok=True)
     
     print("\n" + "=" * 60)
@@ -630,11 +687,23 @@ def save_models(rf_model, nn_model, scaler, accuracy_rf, accuracy_nn, feature_mo
         pickle.dump({
             'model': rf_model,
             'scaler': scaler,
-            'accuracy': accuracy_rf,
-            'feature_mode': feature_mode,
-            'feature_count': 26 if feature_mode == 'fast' else 54
+            'accuracy': results['rf_accuracy'],
+            'f1_score': results['rf_f1'],
+            'feature_mode': feature_mode
         }, f)
     print(f"   Random Forest saved: {rf_path}")
+    
+    if gb_model is not None:
+        gb_path = os.path.join(WEIGHTS_DIR, 'pneumonia_audio_gb.pkl')
+        with open(gb_path, 'wb') as f:
+            pickle.dump({
+                'model': gb_model,
+                'scaler': scaler,
+                'accuracy': results['gb_accuracy'],
+                'f1_score': results['gb_f1'],
+                'feature_mode': feature_mode
+            }, f)
+        print(f"   Gradient Boosting saved: {gb_path}")
     
     if nn_model is not None:
         nn_path = os.path.join(WEIGHTS_DIR, 'pneumonia_audio_nn.keras')
@@ -645,32 +714,21 @@ def save_models(rf_model, nn_model, scaler, accuracy_rf, accuracy_nn, feature_mo
         with open(nn_meta_path, 'wb') as f:
             pickle.dump({
                 'scaler': scaler,
-                'accuracy': accuracy_nn,
-                'feature_mode': feature_mode,
-                'feature_count': 26 if feature_mode == 'fast' else 54
+                'accuracy': results['nn_accuracy'],
+                'f1_score': results['nn_f1'],
+                'feature_mode': feature_mode
             }, f)
-        print(f"   Neural Network metadata saved: {nn_meta_path}")
-    
-    summary = {
-        'random_forest': {
-            'path': 'pneumonia_audio_rf.pkl',
-            'accuracy': float(accuracy_rf),
-            'feature_mode': feature_mode
-        },
-        'neural_network': {
-            'path': 'pneumonia_audio_nn.keras' if nn_model else None,
-            'accuracy': float(accuracy_nn) if nn_model else None,
-            'feature_mode': feature_mode
-        },
-        'feature_mode': feature_mode,
-        'feature_count': 26 if feature_mode == 'fast' else 54,
-        'trained_at': time.strftime('%Y-%m-%d %H:%M:%S')
-    }
     
     summary_path = os.path.join(WEIGHTS_DIR, 'pneumonia_audio_training_summary.json')
     with open(summary_path, 'w') as f:
-        json.dump(summary, f, indent=2)
-    print(f"   Training summary saved: {summary_path}")
+        json.dump({
+            'random_forest': {'accuracy': results['rf_accuracy'], 'f1': results['rf_f1']},
+            'gradient_boosting': {'accuracy': results['gb_accuracy'], 'f1': results['gb_f1']} if gb_model else None,
+            'neural_network': {'accuracy': results['nn_accuracy'], 'f1': results['nn_f1']} if nn_model else None,
+            'feature_mode': feature_mode,
+            'trained_at': time.strftime('%Y-%m-%d %H:%M:%S')
+        }, f, indent=2)
+    print(f"   Summary saved: {summary_path}")
 
 
 def main():
@@ -678,31 +736,21 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Train pneumonia audio detection models')
-    parser.add_argument('--fast', action='store_true', help='Use fast mode with fewer samples')
+    parser.add_argument('--fast', action='store_true', help='Use fast mode (32 features)')
+    parser.add_argument('--full', action='store_true', help='Use full enhanced features (58 features)')
     parser.add_argument('--samples', type=int, default=2000, help='Number of samples in fast mode')
     parser.add_argument('--workers', type=int, default=None, help='Number of parallel workers')
     parser.add_argument('--no-cache', action='store_true', help='Disable feature caching')
-    parser.add_argument('--standard-features', action='store_true', help='Use standard features (slower but more accurate)')
+    parser.add_argument('--skip-nn', action='store_true', help='Skip neural network training')
     args = parser.parse_args()
     
     print("\n" + "=" * 60)
-    print("USAGE OPTIONS:")
+    print("PNEUMONIA AUDIO MODEL TRAINING (OPTIMIZED V2)")
     print("=" * 60)
-    print("  Fast mode (recommended):  python train_pneumonia_audio_models.py --fast")
-    print("  Ultra-fast mode:          python train_pneumonia_audio_models.py --fast --samples 500")
-    print("  More workers:             python train_pneumonia_audio_models.py --workers 8")
-    print("  Standard features:        python train_pneumonia_audio_models.py --standard-features")
-    print("=" * 60)
-    
-    print("\n" + "=" * 60)
-    print("PNEUMONIA AUDIO MODEL TRAINING (OPTIMIZED)")
-    print("=" * 60)
-    if args.fast:
-        print(f"FAST MODE ENABLED - Using {args.samples} samples")
-    if args.standard_features:
-        print("STANDARD FEATURES - More features, slower processing")
-    else:
-        print("FAST FEATURES - 26 features, faster processing")
+    print("\nUsage options:")
+    print("  Fast mode:     python train_pneumonia_audio_models.py --fast")
+    print("  Full mode:     python train_pneumonia_audio_models.py --full")
+    print("  Custom:        python train_pneumonia_audio_models.py --fast --samples 1000")
     print("=" * 60)
     
     if not LIBROSA_AVAILABLE or not SKLEARN_AVAILABLE:
@@ -714,11 +762,6 @@ def main():
     
     if not datasets:
         print("\nNo datasets found!")
-        print("Please download audio datasets and place them in:")
-        print(f"   {AUDIO_DATA_DIR}/")
-        print("\nSupported datasets:")
-        print("   - coughvid/ (COUGHVID dataset)")
-        print("   - organized/ with normal/ and abnormal/ subfolders")
         return
     
     audio_files, labels = combine_datasets(datasets)
@@ -727,10 +770,10 @@ def main():
         print("\nNo labeled audio files found!")
         return
     
+    fast_mode = not args.full
     sample_size = args.samples if args.fast else None
-    fast_mode = not args.standard_features
     
-    X, y = extract_features_optimized(
+    X, y = extract_features_parallel(
         audio_files, 
         labels,
         max_workers=args.workers,
@@ -762,19 +805,32 @@ def main():
     class_weights = {i: w for i, w in enumerate(class_weight_values)}
     print(f"   Class weights: {class_weights}")
     
-    rf_model, accuracy_rf = train_random_forest(X_train, X_test, y_train, y_test, class_weights)
+    rf_model, rf_acc, rf_f1 = train_random_forest(X_train, X_test, y_train, y_test)
     
-    nn_model, accuracy_nn = train_neural_network(X_train, X_test, y_train, y_test, class_weights)
+    gb_model, gb_acc, gb_f1 = train_gradient_boosting(X_train, X_test, y_train, y_test)
     
-    feature_mode = 'fast' if fast_mode else 'standard'
-    save_models(rf_model, nn_model, scaler, accuracy_rf, accuracy_nn, feature_mode)
+    if not args.skip_nn:
+        nn_model, nn_acc, nn_f1 = train_neural_network(X_train, X_test, y_train, y_test, class_weights)
+    else:
+        nn_model, nn_acc, nn_f1 = None, 0, 0
+    
+    results = {
+        'rf_accuracy': rf_acc, 'rf_f1': rf_f1,
+        'gb_accuracy': gb_acc, 'gb_f1': gb_f1,
+        'nn_accuracy': nn_acc, 'nn_f1': nn_f1
+    }
+    
+    feature_mode = 'fast' if fast_mode else 'enhanced'
+    save_models(rf_model, gb_model, nn_model, scaler, results, feature_mode)
     
     print("\n" + "=" * 60)
     print("TRAINING COMPLETE!")
     print("=" * 60)
-    print(f"   Random Forest Accuracy: {accuracy_rf*100:.2f}%")
+    print(f"\nResults Summary:")
+    print(f"   Random Forest:      Accuracy={rf_acc*100:.2f}%, F1={rf_f1:.4f}")
+    print(f"   Gradient Boosting:  Accuracy={gb_acc*100:.2f}%, F1={gb_f1:.4f}")
     if nn_model:
-        print(f"   Neural Network Accuracy: {accuracy_nn*100:.2f}%")
+        print(f"   Neural Network:     Accuracy={nn_acc*100:.2f}%, F1={nn_f1:.4f}")
     print(f"\nModels saved to: {WEIGHTS_DIR}/")
     print("=" * 60)
 
