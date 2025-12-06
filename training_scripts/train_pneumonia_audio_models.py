@@ -20,13 +20,6 @@ Usage:
 ------
 1. Download datasets and place in training_data/pneumonia_audio/ folder
 2. Run: python training_scripts/train_pneumonia_audio_models.py
-
-Team Members:
-- F23BARIN1M01140 - Muhammad Abdullah
-- F23BARIN1M01131 - Muhammad Ali Yahya
-- F23BARIN1M01228 - Manahil Shouket
-- F23BARIN1M01114 - Ayman Noor
-- F23BARIN1M01225 - Tayyaba Mumtaz
 """
 
 import os
@@ -37,14 +30,18 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool, cpu_count
 import pickle
 import json
+import time
+import signal
+import hashlib
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 AUDIO_DATA_DIR = str(PROJECT_ROOT / 'training_data' / 'pneumonia_audio')
 WEIGHTS_DIR = str(PROJECT_ROOT / 'models' / 'weights')
+CACHE_DIR = str(PROJECT_ROOT / 'training_data' / '.feature_cache')
 
 try:
     import librosa
@@ -74,9 +71,14 @@ except ImportError:
     TF_AVAILABLE = False
 
 
-def extract_audio_features(audio_path, sr=22050, duration=10):
+def timeout_handler(signum, frame):
+    """Handler for timeout signal"""
+    raise TimeoutError("Audio processing timed out")
+
+
+def extract_audio_features_single(audio_path, sr=22050, duration=8, timeout_seconds=30):
     """
-    Extract comprehensive audio features from an audio file.
+    Extract comprehensive audio features from an audio file with timeout.
     
     Features extracted (97 total):
     - MFCC mean (40)
@@ -89,13 +91,14 @@ def extract_audio_features(audio_path, sr=22050, duration=10):
     - Chroma mean (12)
     """
     try:
-        y, sr = librosa.load(audio_path, sr=sr, duration=duration)
+        y, sr = librosa.load(audio_path, sr=sr, duration=duration, mono=True)
         
-        if len(y) < sr * 0.5:
+        if len(y) < sr * 0.3:
             return None
         
-        if len(y) < sr * duration:
-            y = np.pad(y, (0, sr * duration - len(y)), mode='constant')
+        min_length = sr * 2
+        if len(y) < min_length:
+            y = np.pad(y, (0, min_length - len(y)), mode='constant')
         
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
         mfcc_mean = np.mean(mfcc, axis=1)
@@ -125,8 +128,38 @@ def extract_audio_features(audio_path, sr=22050, duration=10):
         return features
         
     except Exception as e:
-        print(f"   Warning: Could not process {audio_path}: {e}")
         return None
+
+
+def process_single_file(args):
+    """Process a single audio file - for use with multiprocessing Pool"""
+    idx, file_path, label, cache_path = args
+    
+    if cache_path and os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'rb') as f:
+                cached = pickle.load(f)
+                return idx, cached['features'], label, True
+        except:
+            pass
+    
+    features = extract_audio_features_single(file_path)
+    
+    if features is not None and cache_path:
+        try:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, 'wb') as f:
+                pickle.dump({'features': features}, f)
+        except:
+            pass
+    
+    return idx, features, label, False
+
+
+def get_cache_path(file_path):
+    """Generate cache path for a given audio file"""
+    file_hash = hashlib.md5(file_path.encode()).hexdigest()
+    return os.path.join(CACHE_DIR, f"{file_hash}.pkl")
 
 
 def detect_datasets():
@@ -379,45 +412,107 @@ def combine_datasets(datasets):
     return all_files, all_labels
 
 
-def extract_features_parallel(audio_files, labels, max_workers=4):
-    """Extract features from audio files in parallel"""
+def extract_features_parallel(audio_files, labels, max_workers=None, sample_size=None, use_cache=True):
+    """Extract features from audio files using multiprocessing Pool
+    
+    Args:
+        audio_files: List of audio file paths
+        labels: List of corresponding labels
+        max_workers: Number of parallel workers (default: CPU count - 1)
+        sample_size: If set, randomly sample this many files for faster training
+        use_cache: Whether to cache extracted features for faster reprocessing
+    """
     print("\n" + "=" * 60)
     print("EXTRACTING AUDIO FEATURES")
     print("=" * 60)
-    print(f"Processing {len(audio_files)} audio files...")
     
+    if max_workers is None:
+        max_workers = max(1, cpu_count() - 1)
+    
+    if sample_size and sample_size < len(audio_files):
+        print(f"⚡ FAST MODE: Sampling {sample_size} files from {len(audio_files)} total")
+        np.random.seed(42)
+        indices = np.random.choice(len(audio_files), sample_size, replace=False)
+        audio_files = [audio_files[i] for i in indices]
+        labels = [labels[i] for i in indices]
+    
+    total_files = len(audio_files)
+    print(f"Processing {total_files} audio files...")
+    print(f"   Using {max_workers} parallel processes (multiprocessing)")
+    print(f"   Feature caching: {'ENABLED' if use_cache else 'DISABLED'}")
+    print(f"   Estimated time: ~{max(1, (total_files * 2) // (60 * max_workers))} - {max(2, (total_files * 4) // (60 * max_workers))} minutes")
+    print("")
+    
+    if use_cache:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    
+    tasks = []
+    for idx, (file_path, label) in enumerate(zip(audio_files, labels)):
+        cache_path = get_cache_path(file_path) if use_cache else None
+        tasks.append((idx, file_path, label, cache_path))
+    
+    start_time = time.time()
     features_list = []
     valid_labels = []
+    cached_count = 0
+    processed_count = 0
+    failed_count = 0
     
-    def process_file(args):
-        idx, file_path, label = args
-        features = extract_audio_features(file_path)
-        return idx, features, label
-    
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for idx, (file_path, label) in enumerate(zip(audio_files, labels)):
-            futures.append(executor.submit(process_file, (idx, file_path, label)))
-        
-        completed = 0
-        for future in as_completed(futures):
-            completed += 1
-            if completed % 100 == 0:
-                print(f"   Processed {completed}/{len(audio_files)} files...")
+    try:
+        with Pool(processes=max_workers) as pool:
+            results = []
             
-            try:
-                idx, features, label = future.result()
+            for result in pool.imap_unordered(process_single_file, tasks, chunksize=max(1, total_files // (max_workers * 10))):
+                processed_count += 1
+                idx, features, label, from_cache = result
+                
                 if features is not None:
                     features_list.append(features)
                     valid_labels.append(label)
-            except Exception as e:
-                pass
+                    if from_cache:
+                        cached_count += 1
+                else:
+                    failed_count += 1
+                
+                if processed_count == 1 or processed_count % 50 == 0 or processed_count == total_files:
+                    elapsed = time.time() - start_time
+                    rate = processed_count / elapsed if elapsed > 0 else 0
+                    remaining = (total_files - processed_count) / rate if rate > 0 else 0
+                    progress_pct = (processed_count / total_files) * 100
+                    
+                    status_parts = [f"[{progress_pct:5.1f}%]", f"{processed_count}/{total_files}"]
+                    status_parts.append(f"Speed: {rate:.1f}/s")
+                    status_parts.append(f"ETA: {remaining/60:.1f}m")
+                    if cached_count > 0:
+                        status_parts.append(f"(cached: {cached_count})")
+                    
+                    print("   " + " | ".join(status_parts))
+    
+    except KeyboardInterrupt:
+        print("\n\n⚠️ Training interrupted by user!")
+        print(f"   Processed {processed_count} files before interrupt")
+        if len(features_list) >= 100:
+            print(f"   Continuing with {len(features_list)} successfully processed files...")
+        else:
+            print("   Not enough data to continue. Exiting.")
+            sys.exit(1)
+    
+    except Exception as e:
+        print(f"\n⚠️ Error during parallel processing: {e}")
+        print("   Attempting to continue with processed files...")
+    
+    if len(features_list) == 0:
+        print("\n❌ No features extracted! Check your audio files.")
+        return np.array([]), np.array([])
     
     X = np.array(features_list)
     y = np.array(valid_labels)
     
-    print(f"\n✅ Feature extraction complete!")
+    total_time = time.time() - start_time
+    print(f"\n✅ Feature extraction complete in {total_time/60:.1f} minutes!")
     print(f"   Successfully processed: {len(X)} files")
+    print(f"   Failed/skipped: {failed_count} files")
+    print(f"   Loaded from cache: {cached_count} files")
     print(f"   Feature vector size: {X.shape[1] if len(X) > 0 else 0}")
     print(f"   Class distribution: Normal={sum(y==0)}, Abnormal={sum(y==1)}")
     
@@ -560,13 +655,26 @@ def save_models(rf_model, rf_scaler, nn_model, nn_scaler):
         print(f"✅ Saved NN scaler: {nn_scaler_path}")
 
 
-def train_audio_models():
-    """Main training function"""
+def train_audio_models(fast_mode=False, sample_size=2000, workers=None, no_cache=False):
+    """Main training function
+    
+    Args:
+        fast_mode: If True, use only a sample of the data for faster training
+        sample_size: Number of files to use in fast mode (default 2000)
+        workers: Number of parallel workers for feature extraction (default: CPU count - 1)
+        no_cache: If True, disable feature caching
+    """
+    if workers is None:
+        workers = max(1, cpu_count() - 1)
+    
     print("\n" + "=" * 60)
     print("PNEUMONIA AUDIO MODEL TRAINING")
     print("=" * 60)
     print("Training audio classification models for pneumonia detection")
     print("Models: Random Forest + Neural Network (MLP)")
+    if fast_mode:
+        print(f"⚡ FAST MODE ENABLED - Using {sample_size} samples")
+    print(f"   Using {workers} CPU cores for parallel processing")
     print("=" * 60)
     
     if not LIBROSA_AVAILABLE or not SKLEARN_AVAILABLE:
@@ -608,7 +716,12 @@ def train_audio_models():
             print("\n❌ Not enough data for training. Need at least 20 labeled files.")
             return False
     
-    X, y = extract_features_parallel(audio_files, labels)
+    X, y = extract_features_parallel(
+        audio_files, labels, 
+        max_workers=workers,
+        sample_size=sample_size if fast_mode else None,
+        use_cache=not no_cache
+    )
     
     if len(X) < 20:
         print("\n❌ Not enough valid audio files for training.")
@@ -650,4 +763,35 @@ def train_audio_models():
 
 
 if __name__ == "__main__":
-    train_audio_models()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Train Pneumonia Audio Detection Models')
+    parser.add_argument('--fast', action='store_true', 
+                        help='Fast mode: use only a sample of data for quicker training')
+    parser.add_argument('--samples', type=int, default=2000,
+                        help='Number of samples to use in fast mode (default: 2000)')
+    parser.add_argument('--workers', type=int, default=None,
+                        help=f'Number of parallel workers (default: {max(1, cpu_count() - 1)} = CPU count - 1)')
+    parser.add_argument('--no-cache', action='store_true',
+                        help='Disable feature caching (slower but uses less disk space)')
+    
+    args = parser.parse_args()
+    
+    default_workers = max(1, cpu_count() - 1)
+    
+    print("\n" + "=" * 60)
+    print("USAGE OPTIONS:")
+    print("=" * 60)
+    print("  Normal mode (all data):  python train_pneumonia_audio_models.py")
+    print("  Fast mode (2000 samples): python train_pneumonia_audio_models.py --fast")
+    print("  Custom samples:          python train_pneumonia_audio_models.py --fast --samples 1000")
+    print(f"  More workers:            python train_pneumonia_audio_models.py --workers {cpu_count()}")
+    print("  No caching:              python train_pneumonia_audio_models.py --no-cache")
+    print("=" * 60)
+    
+    train_audio_models(
+        fast_mode=args.fast,
+        sample_size=args.samples,
+        workers=args.workers,
+        no_cache=args.no_cache
+    )

@@ -17,32 +17,33 @@
     "plate_3": {
       "image": "plate_3.jpg",
       "correct_answers": [
-        "29"
+        "6"
       ],
-      "description": "Normal: 29, Red-Green Blind: 70"
+      "description": "Normal: 6, Red-Green Blind: 70"
     },
     "plate_4": {
       "image": "plate_4.jpg",
       "correct_answers": [
-        "45"
+        "29"
       ],
-      "description": "Normal: 45"
+      "description": "Normal: 29"
     },
     "plate_5": {
       "image": "plate_5.jpg",
       "correct_answers": [
-        "74"
+        "57"
       ],
-      "description": "Normal: 74, Red-Green Blind: 21"
+      "description": "Normal: 57, Red-Green Blind: 21"
     },
     "plate_6": {
       "image": "plate_6.jpg",
       "correct_answers": [
-        "6"
+        "5"
       ],
-      "description": "Normal: 6"
+      "description": "Normal: 5"
     }
   },
+
   "farnsworth": {
     "color_1": {
       "correct_answers": [
@@ -96,10 +97,10 @@
   "cambridge": {
     "pattern_1": {
       "correct_answers": [
-        "c",
-        "C"
+        "o",
+        "O"
       ],
-      "description": "Red-Green discrimination - see C shape"
+      "description": "Red-Green discrimination - see O shape"
     },
     "pattern_2": {
       "correct_answers": [

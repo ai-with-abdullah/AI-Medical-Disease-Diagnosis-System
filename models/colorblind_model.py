@@ -14,10 +14,10 @@ ISHIHARA_PLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), '
 ISHIHARA_TEST_DATABASE = {
     'plate_1': {'correct_answers': ['12'], 'red_green_blind': ['1'], 'description': 'Warm-up: Normal sees 12, Red-Green sees 1', 'accuracy_weight': 0.15},
     'plate_2': {'correct_answers': ['8'], 'red_green_blind': ['3'], 'description': 'Red-Green test: Normal sees 8, Deficient sees 3', 'accuracy_weight': 0.20},
-    'plate_3': {'correct_answers': ['29'], 'red_green_blind': ['70'], 'description': 'Protanopia: Normal sees 29, Protanopia sees 70', 'accuracy_weight': 0.20},
-    'plate_4': {'correct_answers': ['45'], 'red_green_blind': ['unclear'], 'description': 'Deuteranopia: Normal sees 45, Deuteranopia sees nothing', 'accuracy_weight': 0.20},
-    'plate_5': {'correct_answers': ['74'], 'red_green_blind': ['21'], 'description': 'Red-Green spectrum: Normal sees 74, Deficiency sees 21', 'accuracy_weight': 0.15},
-    'plate_6': {'correct_answers': ['6'], 'red_green_blind': ['unclear'], 'description': 'Confirmation: Normal sees 6, Deficiency sees nothing', 'accuracy_weight': 0.10}
+    'plate_3': {'correct_answers': ['6'], 'red_green_blind': ['70'], 'description': 'Protanopia: Normal sees 6, Protanopia sees 70', 'accuracy_weight': 0.20},
+    'plate_4': {'correct_answers': ['29'], 'red_green_blind': ['unclear'], 'description': 'Deuteranopia: Normal sees 29, Deuteranopia sees nothing', 'accuracy_weight': 0.20},
+    'plate_5': {'correct_answers': ['57'], 'red_green_blind': ['21'], 'description': 'Red-Green spectrum: Normal sees 57, Deficiency sees 21', 'accuracy_weight': 0.15},
+    'plate_6': {'correct_answers': ['5'], 'red_green_blind': ['unclear'], 'description': 'Confirmation: Normal sees 5, Deficiency sees nothing', 'accuracy_weight': 0.10}
 }
 
 # ==================== TEST 2: FARNSWORTH D-15 COLOR ARRANGEMENT ====================
@@ -124,21 +124,21 @@ def load_test_image_real(test_name, item_num):
             'spectrum': ('spectrum_test', f'spectrum_{item_num}.jpg'),
             'anomaloscope': ('anomaloscope_test', f'match_{item_num}.jpg'),
         }
-        
+
         if test_name not in test_mappings:
             return None
-        
+
         test_dir, filename = test_mappings[test_name]
         image_path = os.path.join(ISHIHARA_PLATES_DIR, '..', test_dir, filename)
         image_path = os.path.normpath(image_path)
-        
+
         if os.path.exists(image_path):
             img = cv2.imread(image_path)
             if img is not None:
                 return img
     except Exception as e:
         print(f"Error loading {test_name} image {item_num}: {e}")
-    
+
     return None
 
 def load_ishihara_plate_real(plate_num):
@@ -148,11 +148,11 @@ def load_ishihara_plate_real(plate_num):
 def generate_ishihara_plate_authentic(plate_num, size=300):
     """Generate AUTHENTIC Ishihara plate with proper random dot distribution"""
     from PIL import Image, ImageDraw
-    
+
     # Create PIL image
     pil_img = Image.new('RGB', (size, size))
     draw = ImageDraw.Draw(pil_img)
-    
+
     # Plate specifications
     plates = {
         1: {
@@ -192,18 +192,18 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
             'description': 'Normal: 6, Red-Green Blind: Unclear'
         }
     }
-    
+
     plate = plates.get(plate_num, plates[1])
     bg_color = plate['bg_color']
     num_color = plate['num_color']
-    
+
     # Fill background
     draw.rectangle([(0, 0), (size, size)], fill=bg_color)
-    
+
     # Draw dots in background color - full coverage
     dot_size = 4
     num_dots_per_side = size // 8
-    
+
     # Fill entire plate with background-colored dots
     for i in range(num_dots_per_side * 2):
         for j in range(num_dots_per_side * 2):
@@ -211,7 +211,7 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
             y = (j * 8) + np.random.randint(-4, 5)
             if 0 <= x < size and 0 <= y < size:
                 draw.ellipse([x-dot_size, y-dot_size, x+dot_size, y+dot_size], fill=bg_color)
-    
+
     # Now overlay number pattern with contrasting dots
     # Define regions for each number pattern
     if plate_num == 1:  # "12"
@@ -221,12 +221,12 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
                 x_left = (i * 8) + np.random.randint(-4, 5)
                 y_mid = (j * 8) + np.random.randint(-4, 5)
                 x_right = int(size*0.6) + (i * 8) + np.random.randint(-4, 5)
-                
+
                 if 0 <= x_left < int(size*0.35) and int(size*0.25) <= y_mid < int(size*0.75):
                     draw.ellipse([x_left-dot_size, y_mid-dot_size, x_left+dot_size, y_mid+dot_size], fill=num_color)
                 if 0 <= x_right < size and int(size*0.25) <= y_mid < int(size*0.75):
                     draw.ellipse([x_right-dot_size, y_mid-dot_size, x_right+dot_size, y_mid+dot_size], fill=num_color)
-    
+
     elif plate_num == 2:  # "8" - circular pattern
         cx, cy = size // 2, size // 2
         for i in range(num_dots_per_side):
@@ -236,7 +236,7 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
                 dist = ((x - cx)**2 + (y - cy)**2)**0.5
                 if size*0.15 < dist < size*0.35:
                     draw.ellipse([x-dot_size, y-dot_size, x+dot_size, y+dot_size], fill=num_color)
-    
+
     elif plate_num in [3, 5]:  # "29" or "74" - left and right regions
         for i in range(num_dots_per_side):
             for j in range(num_dots_per_side):
@@ -245,7 +245,7 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
                 if 0 <= x < size and int(size*0.2) <= y < int(size*0.8):
                     if x < int(size*0.4) or x > int(size*0.6):
                         draw.ellipse([x-dot_size, y-dot_size, x+dot_size, y+dot_size], fill=num_color)
-    
+
     elif plate_num == 4:  # "45" - horizontal band
         for i in range(num_dots_per_side * 2):
             for j in range(num_dots_per_side):
@@ -253,7 +253,7 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
                 y = int(size*0.3) + (j * 8) + np.random.randint(-4, 5)
                 if 0 <= x < size and 0 <= y < size:
                     draw.ellipse([x-dot_size, y-dot_size, x+dot_size, y+dot_size], fill=num_color)
-    
+
     elif plate_num == 6:  # "6" - circular at bottom
         cx, cy = size // 2, int(size * 0.6)
         for i in range(num_dots_per_side):
@@ -264,28 +264,28 @@ def generate_ishihara_plate_authentic(plate_num, size=300):
                     dist = ((x - cx)**2 + (y - cy)**2)**0.5
                     if size*0.15 < dist < size*0.35:
                         draw.ellipse([x-dot_size, y-dot_size, x+dot_size, y+dot_size], fill=num_color)
-    
+
     # Convert to numpy array (RGB) then to BGR for OpenCV
     img_array = np.array(pil_img)
     img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-    
+
     return img_bgr
 
 def generate_test_pattern(test_name, plate_number, size=300):
     """Generate test pattern for any test type"""
     plate_num = int(plate_number)
     img = np.ones((size, size, 3), dtype=np.uint8) * 255
-    
+
     # Try to load REAL images first for ALL tests
     real_img = load_test_image_real(test_name, plate_num)
     if real_img is not None:
         return real_img
-    
+
     # Fallback: generate if real image not available
     if test_name == 'ishihara':
         # Generate if real image not available
         return generate_ishihara_plate_authentic(plate_num, size)
-    
+
     elif test_name == 'farnsworth':
         # Color bars - EACH PLATE IS DIFFERENT
         color_schemes = [
@@ -302,7 +302,7 @@ def generate_test_pattern(test_name, plate_number, size=300):
             start_x = i * bar_width
             end_x = start_x + bar_width
             img[:, start_x:end_x] = colors[i]
-    
+
     elif test_name == 'cambridge':
         # Different shapes for each plate
         if plate_num == 1:
@@ -326,7 +326,7 @@ def generate_test_pattern(test_name, plate_number, size=300):
             # Star-like
             star = np.array([[size//2, size//4], [3*size//4, size//2], [3*size//4, 3*size//4], [size//4, 3*size//4], [size//4, size//2]], dtype=np.int32)
             cv2.fillPoly(img, [star], (200, 150, 50))
-    
+
     elif test_name == 'spectrum':
         # Color spectrum - DIFFERENT FOR EACH PLATE
         spectrum_types = {
@@ -337,9 +337,9 @@ def generate_test_pattern(test_name, plate_number, size=300):
             5: 'cool',       # Cool colors
             6: 'grayscale'   # Grayscale
         }
-        
+
         spectrum_type = spectrum_types.get(plate_num, 'rainbow')
-        
+
         for x in range(size):
             if spectrum_type == 'rainbow':
                 hue = int(180 * x / size)
@@ -365,9 +365,9 @@ def generate_test_pattern(test_name, plate_number, size=300):
             else:  # grayscale
                 gray = int(255 * x / size)
                 color = (gray, gray, gray)
-            
+
             cv2.line(img, (x, 0), (x, size), color, 1)
-    
+
     elif test_name == 'anomaloscope':
         # Color matching - DIFFERENT colors for each plate
         color_pairs = [
@@ -378,14 +378,14 @@ def generate_test_pattern(test_name, plate_number, size=300):
             ((200, 50, 50), (50, 150, 200)),     # Red vs Cyan
             ((100, 200, 100), (150, 50, 200))    # Light Green vs Purple
         ]
-        
+
         left_color, right_color = color_pairs[plate_num - 1] if plate_num <= 6 else color_pairs[0]
         cv2.rectangle(img, (10, 10), (size//2 - 5, size - 10), left_color, -1)
         cv2.rectangle(img, (size//2 + 5, 10), (size - 10, size - 10), right_color, -1)
-        
+
         # Add a dividing line
         cv2.line(img, (size//2, 0), (size//2, size), (100, 100, 100), 2)
-    
+
     return img
 
 def analyze_single_test(test_name, answers):
@@ -394,29 +394,29 @@ def analyze_single_test(test_name, answers):
     correct_count = 0
     total_items = len(test_data)
     accuracy = 0.0
-    
+
     for idx, (item_key, item_data) in enumerate(test_data.items()):
         user_answer = answers[idx] if idx < len(answers) else ""
-        
+
         if test_name == 'ishihara':
             # Check if user answer matches any correct answer
             is_correct = user_answer in item_data['correct_answers']
-        
+
         elif test_name == 'farnsworth':
             # Check if user answer matches any color in correct sequence
             correct_colors = item_data.get('correct_answers', item_data.get('correct_sequence', []))
             is_correct = user_answer.lower() in [c.lower() for c in correct_colors]
-        
+
         elif test_name == 'cambridge':
             # Check if user answer matches the correct pattern
             correct_patterns = item_data.get('correct_answers', [item_data.get('correct_pattern', '')])
             is_correct = user_answer.lower() in [p.lower() for p in correct_patterns]
-        
+
         elif test_name == 'spectrum':
             # Check if user answer matches any color in spectrum
             correct_colors = item_data.get('correct_answers', item_data.get('correct_range', '').split('-'))
             is_correct = user_answer.lower() in [c.lower().strip() for c in correct_colors]
-        
+
         else:  # anomaloscope
             # Check if user ratio is within acceptable range
             try:
@@ -431,12 +431,12 @@ def analyze_single_test(test_name, answers):
                     is_correct = abs(user_val - correct_val) < 0.2
             except:
                 is_correct = False
-        
+
         if is_correct:
             correct_count += 1
-    
+
     accuracy = (correct_count / total_items) * 100
-    
+
     return {
         'test_name': test_name,
         'display_name': TESTS_METADATA[test_name]['name'],
@@ -449,26 +449,26 @@ def analyze_single_test(test_name, answers):
 def analyze_all_five_tests(all_answers_dict):
     """
     Analyze all 5 tests and calculate overall eye damage ratio
-    
+
     Args:
         all_answers_dict: {'ishihara': [...], 'farnsworth': [...], ...}
-    
+
     Returns:
         Comprehensive report with all tests + damage ratio
     """
     individual_results = {}
     total_accuracy = 0.0
-    
+
     # Analyze each test
     for test_name in ['ishihara', 'farnsworth', 'cambridge', 'spectrum', 'anomaloscope']:
         answers = all_answers_dict.get(test_name, [])
         result = analyze_single_test(test_name, answers)
         individual_results[test_name] = result
         total_accuracy += result['accuracy_percentage']
-    
+
     # Calculate overall metrics
     average_accuracy = total_accuracy / 5
-    
+
     # Determine color blindness classification
     if average_accuracy >= 80:
         diagnosis = 'Normal Color Vision'
@@ -486,7 +486,7 @@ def analyze_all_five_tests(all_answers_dict):
         diagnosis = 'Severe Color Vision Deficiency'
         severity = 'Severe'
         damage_ratio = 0.90
-    
+
     # Find most likely CVD type based on pattern
     cvd_type = 'Unknown'
     if average_accuracy >= 80:
@@ -495,7 +495,7 @@ def analyze_all_five_tests(all_answers_dict):
         cvd_type = 'Possible Anomalous Trichromacy'
     else:
         cvd_type = 'Dichromacy or Severe Deficiency'
-    
+
     # Determine recommendations
     recommendations = []
     if average_accuracy >= 80:
@@ -519,7 +519,7 @@ def analyze_all_five_tests(all_answers_dict):
             '🚫 Career implications for color-dependent professions',
             '🛠️ Use color blindness assistive technologies'
         ]
-    
+
     return {
         'overall_diagnosis': diagnosis,
         'cvd_type': cvd_type,
@@ -552,7 +552,7 @@ def generate_comprehensive_report(analysis_result):
         'recommendations': analysis_result['recommendations'],
         'important_note': 'This is a comprehensive screening test. For official diagnosis, consult an ophthalmologist.'
     }
-    
+
     # Add individual test results
     for test_name, result in analysis_result['individual_test_results'].items():
         report['individual_test_results'][result['display_name']] = {
@@ -560,7 +560,7 @@ def generate_comprehensive_report(analysis_result):
             'accuracy': f"{result['accuracy_percentage']:.1f}%",
             'confidence': f"{result['confidence']:.1%}"
         }
-    
+
     return report
 
 def export_comprehensive_results(analysis_result, filename='color_vision_complete_assessment.json'):
