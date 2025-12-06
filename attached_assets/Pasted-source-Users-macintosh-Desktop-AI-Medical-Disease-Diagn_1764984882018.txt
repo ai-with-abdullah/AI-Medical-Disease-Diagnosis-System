@@ -1,0 +1,49 @@
+source /Users/macintosh/Desktop/AI-Medical-Disease-Diagnosis-System/venv/bin/activate
+(base) macintosh@MacInToshs-MacBook-Pro AI-Medical-Disease-Diagnosis-System % source /Users/macintosh/Desktop/AI-Medical-D
+isease-Diagnosis-System/venv/bin/activate
+(venv) (base) macintosh@MacInToshs-MacBook-Pro AI-Medical-Disease-Diagnosis-System % python training_script/train_pneumoni
+a_audio_models.py
+/usr/local/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/macintosh/Desktop/AI-Medical-Disease-Diagnosis-System/training_script/train_pneumonia_audio_models.py': [Errno 2] No such file or directory
+(venv) (base) macintosh@MacInToshs-MacBook-Pro AI-Medical-Disease-Diagnosis-System % python training_scripts/train_pneumonia_audio_models.py --fast
+2025-12-06 05:39:05.175803: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+
+============================================================
+USAGE OPTIONS:
+============================================================
+  Normal mode (all data):  python train_pneumonia_audio_models.py
+  Fast mode (2000 samples): python train_pneumonia_audio_models.py --fast
+  Custom samples:          python train_pneumonia_audio_models.py --fast --samples 1000
+  More workers:            python train_pneumonia_audio_models.py --workers 8
+============================================================
+
+============================================================
+PNEUMONIA AUDIO MODEL TRAINING
+============================================================
+Training audio classification models for pneumonia detection
+Models: Random Forest + Neural Network (MLP)
+⚡ FAST MODE ENABLED - Using 2000 samples
+============================================================
+
+📁 Scanning for datasets in: /Users/macintosh/Desktop/AI-Medical-Disease-Diagnosis-System/training_data/pneumonia_audio
+✅ Found COUGHVID: 27550 audio files
+
+============================================================
+COMBINING DATASETS
+============================================================
+
+📂 Loading COUGHVID dataset...
+   Loaded 16224 labeled files from metadata
+
+📊 Combined dataset: 16224 total audio files
+   Normal: 12479, Abnormal: 3745
+
+============================================================
+EXTRACTING AUDIO FEATURES
+============================================================
+⚡ FAST MODE: Sampling 2000 files from 16224 total
+Processing 2000 audio files...
+   Using 4 parallel workers
+   Estimated time: ~100 - 166 minutes
+
+   [  0.1%] 1/2000 files | Speed: 0.2 files/sec | ETA: 138.0 min
