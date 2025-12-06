@@ -1,41 +1,35 @@
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
 import os
-import joblib
+import streamlit as st
 
-# Global variables for each disease type
-TRAINED_MODELS = {
-    'generic': {'model': None, 'scaler': None, 'loaded': False},
-    'cad': {'model': None, 'scaler': None, 'loaded': False},
-    'arrhythmia': {'model': None, 'scaler': None, 'loaded': False}
-}
+@st.cache_resource
+def get_sklearn():
+    """Lazy load sklearn - cached so only loads once"""
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler
+    import joblib
+    return RandomForestClassifier, StandardScaler, joblib
 
-def load_trained_models():
-    """Load trained models for all disease types if they exist"""
-    for disease_type in ['generic', 'cad', 'arrhythmia']:
-        if TRAINED_MODELS[disease_type]['loaded']:
-            continue
-        
-        model_path = f'models/weights/heart_{disease_type}_model.pkl'
-        scaler_path = f'models/weights/heart_{disease_type}_scaler.pkl'
-        
-        if os.path.exists(model_path) and os.path.exists(scaler_path):
-            try:
-                TRAINED_MODELS[disease_type]['model'] = joblib.load(model_path)
-                TRAINED_MODELS[disease_type]['scaler'] = joblib.load(scaler_path)
-                print(f"✅ Loaded trained {disease_type} model")
-            except Exception as e:
-                print(f"⚠️ Error loading {disease_type} model: {e}. Using demo mode.")
-                TRAINED_MODELS[disease_type]['model'] = None
-                TRAINED_MODELS[disease_type]['scaler'] = None
-        else:
-            print(f"⚠️ {disease_type} model weights not found. Using demo mode.")
-            TRAINED_MODELS[disease_type]['model'] = None
-            TRAINED_MODELS[disease_type]['scaler'] = None
-        
-        TRAINED_MODELS[disease_type]['loaded'] = True
+@st.cache_resource
+def load_heart_model(disease_type: str):
+    """Load trained heart model - cached per disease type"""
+    _, _, joblib = get_sklearn()
+    
+    model_path = f'models/weights/heart_{disease_type}_model.pkl'
+    scaler_path = f'models/weights/heart_{disease_type}_scaler.pkl'
+    
+    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
+        return None
+    
+    try:
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        print(f"✅ Loaded trained {disease_type} model")
+        return {'model': model, 'scaler': scaler}
+    except Exception as e:
+        print(f"⚠️ Error loading {disease_type} model: {e}. Using demo mode.")
+        return None
 
 def encode_features(features):
     """Encode categorical features to numerical values"""
@@ -67,16 +61,10 @@ def predict_heart_disease(features, disease_type='generic'):
         disease_type: 'generic' (CVD risk), 'cad' (Coronary Artery Disease), 'arrhythmia' (Abnormal heartbeat)
     """
     
-    # Load trained models
-    load_trained_models()
+    model_data = load_heart_model(disease_type)
     
-    model = TRAINED_MODELS[disease_type]['model']
-    scaler = TRAINED_MODELS[disease_type]['scaler']
-    
-    # Encode features
     encoded_features = encode_features(features)
     
-    # Create feature array
     feature_array = np.array([
         encoded_features['age'],
         encoded_features['sex'],
@@ -89,7 +77,6 @@ def predict_heart_disease(features, disease_type='generic'):
         encoded_features['exang']
     ]).reshape(1, -1)
     
-    # Disease type descriptions
     disease_labels = {
         'generic': 'General Cardiovascular Disease',
         'cad': 'Coronary Artery Disease (CAD)',
@@ -102,14 +89,15 @@ def predict_heart_disease(features, disease_type='generic'):
         'arrhythmia': 'Arrhythmia - irregular heartbeat patterns'
     }
     
-    if model is not None and scaler is not None:
-        # PRODUCTION MODE: Use trained Random Forest model
+    if model_data is not None:
+        model = model_data['model']
+        scaler = model_data['scaler']
+        
         feature_scaled = scaler.transform(feature_array)
         
         prediction = model.predict(feature_scaled)[0]
-        probability = model.predict_proba(feature_scaled)[0][1]  # Probability of disease
+        probability = model.predict_proba(feature_scaled)[0][1]
         
-        # Risk level classification
         if probability > 0.7:
             risk_level = "High"
         elif probability > 0.4:
@@ -117,7 +105,6 @@ def predict_heart_disease(features, disease_type='generic'):
         else:
             risk_level = "Low"
         
-        # Get feature importances from trained model
         feature_names = ['Age', 'Sex', 'Chest Pain Type', 'Blood Pressure', 'Cholesterol', 
                         'Fasting Blood Sugar', 'Resting ECG', 'Max Heart Rate', 'Exercise Angina']
         
@@ -128,7 +115,6 @@ def predict_heart_disease(features, disease_type='generic'):
                 'importance': [float(imp) for imp in importances]
             }
         else:
-            # Default importance if not available
             feature_importance_data = {
                 'feature': feature_names,
                 'importance': [0.25, 0.03, 0.06, 0.20, 0.18, 0.02, 0.01, 0.15, 0.10]
@@ -145,7 +131,6 @@ def predict_heart_disease(features, disease_type='generic'):
         }
     
     else:
-        # DEMO MODE: Use risk score calculation
         age_score = min(encoded_features['age'] / 100.0, 1.0)
         bp_score = max(0, (encoded_features['trestbps'] - 120) / 80.0)
         chol_score = max(0, (encoded_features['chol'] - 200) / 400.0)
@@ -180,8 +165,11 @@ def predict_heart_disease(features, disease_type='generic'):
             'disease_description': disease_descriptions[disease_type]
         }
 
+@st.cache_resource
 def build_heart_disease_model():
     """Build Random Forest model for heart disease prediction"""
+    RandomForestClassifier, _, _ = get_sklearn()
+    
     model = RandomForestClassifier(
         n_estimators=100,
         max_depth=10,
@@ -200,6 +188,8 @@ def train_heart_model(X_train, y_train, disease_type='generic'):
         y_train: Training labels
         disease_type: 'generic', 'cad', or 'arrhythmia'
     """
+    _, StandardScaler, _ = get_sklearn()
+    
     model = build_heart_disease_model()
     
     scaler = StandardScaler()
@@ -211,8 +201,7 @@ def train_heart_model(X_train, y_train, disease_type='generic'):
 
 def is_using_trained_model(disease_type='generic'):
     """Check if system is using trained model or demo mode for specific disease type"""
-    load_trained_models()
-    return TRAINED_MODELS[disease_type]['model'] is not None and TRAINED_MODELS[disease_type]['scaler'] is not None
+    return load_heart_model(disease_type) is not None
 
 def get_disease_types():
     """Get list of available disease types"""

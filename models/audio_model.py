@@ -1,74 +1,81 @@
 import numpy as np
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
 import io
 import os
 import pickle
-from PIL import Image
+import streamlit as st
 
-TRAINED_AUDIO_MODELS_LOADED = False
-TRAINED_AUDIO_MODELS = {}
+@st.cache_resource
+def get_librosa():
+    """Lazy load librosa - cached so only loads once"""
+    import librosa
+    import librosa.display
+    return librosa
 
-def load_trained_audio_models():
-    """Load trained audio models if they exist, otherwise use rule-based mode"""
-    global TRAINED_AUDIO_MODELS_LOADED, TRAINED_AUDIO_MODELS
-    
-    if TRAINED_AUDIO_MODELS_LOADED:
-        return TRAINED_AUDIO_MODELS
-    
-    model_paths = {
-        'RandomForest': {
-            'model': 'models/weights/pneumonia_audio_rf_model.pkl',
-            'scaler': 'models/weights/pneumonia_audio_rf_scaler.pkl'
-        },
-        'NeuralNetwork': {
-            'model': 'models/weights/pneumonia_audio_nn_model.h5',
-            'scaler': 'models/weights/pneumonia_audio_nn_scaler.pkl'
-        }
-    }
-    
-    for model_name, paths in model_paths.items():
-        model_path = paths['model']
-        scaler_path = paths['scaler']
-        
-        if os.path.exists(model_path) and os.path.exists(scaler_path):
-            try:
-                with open(scaler_path, 'rb') as f:
-                    scaler = pickle.load(f)
-                
-                if model_name == 'RandomForest':
-                    with open(model_path, 'rb') as f:
-                        model = pickle.load(f)
-                else:
-                    try:
-                        from tensorflow import keras
-                        model = keras.models.load_model(model_path)
-                    except ImportError:
-                        print(f"⚠️ TensorFlow not available for {model_name}")
-                        continue
-                
-                TRAINED_AUDIO_MODELS[model_name] = {
-                    'model': model,
-                    'scaler': scaler
-                }
-                print(f"✅ Loaded trained {model_name} audio model from {model_path}")
-            except Exception as e:
-                print(f"⚠️ Error loading {model_name}: {e}. Using demo mode.")
-                TRAINED_AUDIO_MODELS[model_name] = None
-        else:
-            print(f"⚠️ {model_name} audio weights not found. Using demo mode.")
-            TRAINED_AUDIO_MODELS[model_name] = None
-    
-    TRAINED_AUDIO_MODELS_LOADED = True
-    return TRAINED_AUDIO_MODELS
+@st.cache_resource
+def get_matplotlib():
+    """Lazy load matplotlib - cached so only loads once"""
+    import matplotlib.pyplot as plt
+    return plt
 
+@st.cache_resource
+def get_tensorflow_keras():
+    """Lazy load TensorFlow/Keras for audio models - cached so only loads once"""
+    try:
+        from tensorflow import keras
+        return keras
+    except ImportError:
+        return None
+
+@st.cache_resource
+def load_audio_model_rf():
+    """Load Random Forest audio model - cached"""
+    model_path = 'models/weights/pneumonia_audio_rf_model.pkl'
+    scaler_path = 'models/weights/pneumonia_audio_rf_scaler.pkl'
+    
+    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
+        return None
+    
+    try:
+        with open(scaler_path, 'rb') as f:
+            scaler = pickle.load(f)
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        print(f"✅ Loaded trained RandomForest audio model")
+        return {'model': model, 'scaler': scaler}
+    except Exception as e:
+        print(f"⚠️ Error loading RandomForest: {e}. Using demo mode.")
+        return None
+
+@st.cache_resource
+def load_audio_model_nn():
+    """Load Neural Network audio model - cached"""
+    model_path = 'models/weights/pneumonia_audio_nn_model.h5'
+    scaler_path = 'models/weights/pneumonia_audio_nn_scaler.pkl'
+    
+    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
+        return None
+    
+    keras = get_tensorflow_keras()
+    if keras is None:
+        return None
+    
+    try:
+        with open(scaler_path, 'rb') as f:
+            scaler = pickle.load(f)
+        model = keras.models.load_model(model_path)
+        print(f"✅ Loaded trained NeuralNetwork audio model")
+        return {'model': model, 'scaler': scaler}
+    except Exception as e:
+        print(f"⚠️ Error loading NeuralNetwork: {e}. Using demo mode.")
+        return None
 
 def extract_features_for_prediction(audio_file, sr=22050, duration=10):
     """
     Extract comprehensive audio features for model prediction.
     Same feature extraction as training script (97 features).
     """
+    librosa = get_librosa()
+    
     try:
         y, sr = librosa.load(audio_file, sr=sr, duration=duration)
         
@@ -118,12 +125,11 @@ def predict_with_trained_model(audio_file, precomputed_features=None):
         audio_file: Path to audio file
         precomputed_features: Pre-extracted features (97-dim) to avoid double extraction
     """
-    load_trained_audio_models()
+    rf_model = load_audio_model_rf()
     
-    if 'RandomForest' in TRAINED_AUDIO_MODELS and TRAINED_AUDIO_MODELS['RandomForest'] is not None:
-        model_info = TRAINED_AUDIO_MODELS['RandomForest']
-        model = model_info['model']
-        scaler = model_info['scaler']
+    if rf_model is not None:
+        model = rf_model['model']
+        scaler = rf_model['scaler']
         
         if precomputed_features is not None:
             features = precomputed_features
@@ -147,10 +153,11 @@ def predict_with_trained_model(audio_file, precomputed_features=None):
         
         return result, confidence, 'RandomForest (Trained)'
     
-    elif 'NeuralNetwork' in TRAINED_AUDIO_MODELS and TRAINED_AUDIO_MODELS['NeuralNetwork'] is not None:
-        model_info = TRAINED_AUDIO_MODELS['NeuralNetwork']
-        model = model_info['model']
-        scaler = model_info['scaler']
+    nn_model = load_audio_model_nn()
+    
+    if nn_model is not None:
+        model = nn_model['model']
+        scaler = nn_model['scaler']
         
         if precomputed_features is not None:
             features = precomputed_features
@@ -179,12 +186,21 @@ def predict_with_trained_model(audio_file, precomputed_features=None):
 
 def is_using_trained_audio_models():
     """Check if system is using trained audio models or demo mode"""
-    load_trained_audio_models()
-    trained_count = sum(1 for model in TRAINED_AUDIO_MODELS.values() if model is not None)
-    return trained_count > 0, trained_count, len(TRAINED_AUDIO_MODELS)
+    trained_count = 0
+    total = 2
+    
+    if load_audio_model_rf() is not None:
+        trained_count += 1
+    if load_audio_model_nn() is not None:
+        trained_count += 1
+    
+    return trained_count > 0, trained_count, total
 
 
 def extract_audio_features(audio_file):
+    """Extract audio features for visualization and analysis"""
+    librosa = get_librosa()
+    
     y, sr = librosa.load(audio_file, sr=22050, duration=10)
     
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
@@ -210,6 +226,10 @@ def extract_audio_features(audio_file):
     return features
 
 def generate_mfcc_plot(mfcc, sr):
+    """Generate MFCC visualization"""
+    librosa = get_librosa()
+    plt = get_matplotlib()
+    
     fig, ax = plt.subplots(figsize=(10, 4))
     img = librosa.display.specshow(mfcc, x_axis='time', sr=sr, ax=ax)
     ax.set_title('MFCC Features')
@@ -224,6 +244,10 @@ def generate_mfcc_plot(mfcc, sr):
     return buf
 
 def generate_spectrogram(y, sr):
+    """Generate spectrogram visualization"""
+    librosa = get_librosa()
+    plt = get_matplotlib()
+    
     fig, ax = plt.subplots(figsize=(10, 4))
     D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
     img = librosa.display.specshow(D, x_axis='time', y_axis='hz', sr=sr, ax=ax)
@@ -238,6 +262,7 @@ def generate_spectrogram(y, sr):
     return buf
 
 def classify_audio_type(features):
+    """Classify audio as cough or breathing based on features"""
     zcr = features['zero_crossing_rate']
     spectral_centroid = features['spectral_centroid']
     

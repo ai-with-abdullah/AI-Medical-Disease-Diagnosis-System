@@ -1,17 +1,31 @@
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.applications import ResNet50, EfficientNetB0, MobileNetV2
-from PIL import Image
-import cv2
 import os
+import streamlit as st
+
+@st.cache_resource
+def get_tensorflow():
+    """Lazy load TensorFlow - cached so only loads once"""
+    import tensorflow as tf
+    from tensorflow import keras
+    return tf, keras
+
+@st.cache_resource
+def get_keras_applications():
+    """Lazy load Keras applications - cached so only loads once"""
+    from tensorflow.keras.applications import ResNet50, EfficientNetB0, MobileNetV2
+    return ResNet50, EfficientNetB0, MobileNetV2
+
+@st.cache_resource
+def get_cv2():
+    """Lazy load OpenCV - cached so only loads once"""
+    import cv2
+    return cv2
 
 SKIN_CANCER_DEMO_CLASSES = [
     'Melanoma', 'Melanocytic Nevus (Mole)', 'Basal Cell Carcinoma',
     'Benign Keratosis', 'Actinic Keratosis', 'Vascular Lesion', 'Dermatofibroma'
 ]
 
-# HAM10000 dataset classes mapping
 HAM10000_CLASSES = ['nv', 'mel', 'bkl', 'bcc', 'akiec', 'vasc', 'df']
 HAM10000_NAMES = {
     'nv': 'Melanocytic Nevus (Mole)',
@@ -23,34 +37,29 @@ HAM10000_NAMES = {
     'df': 'Dermatofibroma'
 }
 
-TRAINED_MODEL_LOADED = False
-TRAINED_MODEL = None
-
-def load_trained_model():
-    """Load trained skin cancer model if it exists"""
-    global TRAINED_MODEL_LOADED, TRAINED_MODEL
-    
-    if TRAINED_MODEL_LOADED:
-        return TRAINED_MODEL
-    
+@st.cache_resource
+def load_trained_skin_model():
+    """Load trained skin cancer model if it exists - cached"""
     model_path = 'models/weights/skin_resnet50.h5'
     
-    if os.path.exists(model_path):
-        try:
-            TRAINED_MODEL = keras.models.load_model(model_path)
-            print(f"Loaded trained skin cancer model from {model_path}")
-        except Exception as e:
-            print(f"Error loading skin model: {e}. Using demo mode.")
-            TRAINED_MODEL = None
-    else:
+    if not os.path.exists(model_path):
         print(f"Skin model weights not found at {model_path}. Using demo mode.")
-        TRAINED_MODEL = None
+        return None
     
-    TRAINED_MODEL_LOADED = True
-    return TRAINED_MODEL
+    try:
+        _, keras = get_tensorflow()
+        model = keras.models.load_model(model_path)
+        print(f"✅ Loaded trained skin cancer model from {model_path}")
+        return model
+    except Exception as e:
+        print(f"Error loading skin model: {e}. Using demo mode.")
+        return None
 
 def preprocess_skin_image(image_pil, target_size=(224, 224)):
     """Preprocess skin image for model input"""
+    from PIL import Image
+    cv2 = get_cv2()
+    
     img_array = np.array(image_pil.convert('RGB'))
     img_resized = cv2.resize(img_array, target_size)
     img_normalized = img_resized / 255.0
@@ -62,12 +71,7 @@ def analyze_skin_image(image_pil, model_choice):
     """Analyze skin image for cancer detection"""
     img_preprocessed = preprocess_skin_image(image_pil)
     
-    # Load trained model
-    model = load_trained_model()
-    
     if model_choice == "Ensemble":
-        # For ensemble, we'd load multiple models
-        # Currently using single best model
         disease, confidence = get_single_skin_prediction(img_preprocessed, 'ResNet50')
         
         return {
@@ -88,27 +92,23 @@ def analyze_skin_image(image_pil, model_choice):
 def get_single_skin_prediction(img_preprocessed, model_name):
     """Get prediction from skin cancer model"""
     
-    if TRAINED_MODEL is not None:
-        # PRODUCTION MODE: Use trained model
-        prediction_probs = TRAINED_MODEL.predict(img_preprocessed, verbose=0)
+    model = load_trained_skin_model()
+    
+    if model is not None:
+        prediction_probs = model.predict(img_preprocessed, verbose=0)
         
-        # Get predicted class
         predicted_class_idx = np.argmax(prediction_probs[0])
         confidence = float(prediction_probs[0][predicted_class_idx])
         
-        # Map to disease name based on training dataset
         if len(prediction_probs[0]) == 7 and len(HAM10000_CLASSES) == 7:
-            # HAM10000 dataset classes
             disease_code = HAM10000_CLASSES[predicted_class_idx]
             disease = HAM10000_NAMES.get(disease_code, disease_code)
         else:
-            # Custom 7-class model
             disease = SKIN_CANCER_DEMO_CLASSES[predicted_class_idx] if predicted_class_idx < len(SKIN_CANCER_DEMO_CLASSES) else 'Unknown'
         
         return disease, confidence
     
     else:
-        # DEMO MODE: Use simulated predictions for skin cancer
         disease_idx = np.random.randint(0, len(SKIN_CANCER_DEMO_CLASSES))
         disease = SKIN_CANCER_DEMO_CLASSES[disease_idx]
         
@@ -143,8 +143,12 @@ def get_recommendations(disease):
     }
     return recommendations.get(disease, 'Consult a dermatologist or oncologist for proper diagnosis and treatment of this skin condition.')
 
+@st.cache_resource
 def build_skin_classifier(base_model_name='resnet50', num_classes=7):
     """Build skin cancer classification model architecture"""
+    _, keras = get_tensorflow()
+    ResNet50, EfficientNetB0, MobileNetV2 = get_keras_applications()
+    
     if base_model_name == 'resnet50':
         base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     elif base_model_name == 'efficientnet':
@@ -152,7 +156,6 @@ def build_skin_classifier(base_model_name='resnet50', num_classes=7):
     else:
         base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     
-    # Freeze base model for transfer learning
     base_model.trainable = False
     
     model = keras.Sequential([
@@ -175,5 +178,4 @@ def build_skin_classifier(base_model_name='resnet50', num_classes=7):
 
 def is_using_trained_model():
     """Check if system is using trained model or demo mode"""
-    load_trained_model()
-    return TRAINED_MODEL is not None
+    return load_trained_skin_model() is not None
