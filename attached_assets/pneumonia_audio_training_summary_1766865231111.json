@@ -1,0 +1,16 @@
+{
+  "random_forest": {
+    "accuracy": 0.7694915254237288,
+    "f1": 0.6707151532981934
+  },
+  "gradient_boosting": {
+    "accuracy": 0.7580893682588598,
+    "f1": 0.6722923929705982
+  },
+  "neural_network": {
+    "accuracy": 0.598151001540832,
+    "f1": 0.6250788779877947
+  },
+  "feature_mode": "enhanced",
+  "trained_at": "2025-12-06 07:55:04"
+}

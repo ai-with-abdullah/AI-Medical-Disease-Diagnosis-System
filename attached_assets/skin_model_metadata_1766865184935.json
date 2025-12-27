@@ -1,0 +1,24 @@
+{
+  "accuracy": 0.4879148602485657,
+  "classes": [
+    "akiec",
+    "bcc",
+    "bkl",
+    "df",
+    "mel",
+    "nv",
+    "vasc"
+  ],
+  "class_descriptions": {
+    "akiec": "Actinic Keratosis",
+    "bcc": "Basal Cell Carcinoma",
+    "bkl": "Benign Keratosis",
+    "df": "Dermatofibroma",
+    "mel": "Melanoma",
+    "nv": "Melanocytic Nevus (Mole)",
+    "vasc": "Vascular Lesion"
+  },
+  "model_type": "mobilenet",
+  "img_size": 160,
+  "trained_at": "2025-12-06 20:41:27"
+}

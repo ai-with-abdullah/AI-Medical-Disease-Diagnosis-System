@@ -1,0 +1,29 @@
+{
+  "class_indices": {
+    "akiec": 0,
+    "bcc": 1,
+    "bkl": 2,
+    "df": 3,
+    "mel": 4,
+    "nv": 5,
+    "vasc": 6
+  },
+  "class_names": {
+    "0": "akiec",
+    "1": "bcc",
+    "2": "bkl",
+    "3": "df",
+    "4": "mel",
+    "5": "nv",
+    "6": "vasc"
+  },
+  "ham10000_mapping": {
+    "nv": "Melanocytic Nevus (Mole)",
+    "mel": "Melanoma",
+    "bkl": "Benign Keratosis",
+    "bcc": "Basal Cell Carcinoma",
+    "akiec": "Actinic Keratosis",
+    "vasc": "Vascular Lesion",
+    "df": "Dermatofibroma"
+  }
+}
